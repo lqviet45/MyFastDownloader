@@ -1,0 +1,8 @@
+﻿Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\myfastdownloader]
+@="URL:MyFastDownloader Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\myfastdownloader\shell\open\command]
+@="\"C:\\Path\\To\\MyFastDownloader.exe\" \"%1\""
