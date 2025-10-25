@@ -1,4 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Threading.Tasks;
 using MyFastDownloader.App.Models;
 using TaskStatus = MyFastDownloader.App.Models.TaskStatus;
 
@@ -20,7 +23,8 @@ public class DownloadManager
         item.Status = TaskStatus.Downloading;
         Updated?.Invoke(item);
 
-        var engine = new SegmentedDownloader(maxParallel: Math.Min(6, item.SegmentsCount));
+        // USE MORE SEGMENTS FOR SPEED - let the downloader decide optimal count
+        var engine = new SegmentedDownloader(maxParallel: 16); // Increased from 6 to 16
         engine.Progress += (dl, total) =>
         {
             item.TotalSize = total;
@@ -35,7 +39,10 @@ public class DownloadManager
 
         try
         {
-            await engine.StartAsync(item.Url, item.FilePath, item.SegmentsCount, cts.Token);
+            // Use more segments by default
+            var segments = Math.Max(item.SegmentsCount, 16);
+            await engine.StartAsync(item.Url, item.FilePath, segments, cts.Token);
+            
             if (item.Downloaded >= item.TotalSize && item.TotalSize > 0)
                 item.Status = TaskStatus.Completed;
             else if (item.Status != TaskStatus.Paused)

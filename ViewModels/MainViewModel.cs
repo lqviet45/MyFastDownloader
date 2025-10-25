@@ -1,7 +1,10 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
 using MyFastDownloader.App.Models;
@@ -81,10 +84,8 @@ public class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            // Extract filename from URL
             var fileName = GetFileNameFromUrl(DownloadUrl);
             
-            // SHOW SAVE FILE DIALOG
             var saveDialog = new SaveFileDialog
             {
                 FileName = fileName,
@@ -98,12 +99,11 @@ public class MainViewModel : INotifyPropertyChanged
             if (saveDialog.ShowDialog() != true)
                 return;
 
-            // Create download task item
             var item = new DownloadTaskItem
             {
                 Url = DownloadUrl,
                 FilePath = saveDialog.FileName,
-                SegmentsCount = 6,
+                SegmentsCount = 32, // INCREASED from 6 to 32 for maximum speed
                 Status = TaskStatus.Queued
             };
             
@@ -111,7 +111,6 @@ public class MainViewModel : INotifyPropertyChanged
             DownloadUrl = string.Empty;
             StatusMessage = $"Đã thêm: {item.FileName}";
 
-            // USE DOWNLOADMANAGER FOR MULTI-SEGMENT DOWNLOADS
             _ = _downloadManager.StartAsync(item);
         }
         catch (Exception ex)

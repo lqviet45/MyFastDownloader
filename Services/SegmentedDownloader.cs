@@ -1,8 +1,12 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using MyFastDownloader.App.Models;
 
 namespace MyFastDownloader.App.Services;
@@ -11,15 +15,15 @@ public class SegmentedDownloader
 {
     private readonly HttpClient _http;
     private readonly int _maxParallel;
-    private readonly int _bufferSize = 1 << 15; // 32KB
+    private readonly int _bufferSize = 1 << 16; // 64KB (increased from 32KB)
     private readonly ArrayPool<byte> _bufferPool = ArrayPool<byte>.Shared;
     private DateTime _lastProgressUpdate = DateTime.MinValue;
     private static readonly TimeSpan ProgressInterval = TimeSpan.FromMilliseconds(100);
 
-    public event Action<long, long>? Progress; // (downloaded, total)
-    public event Action<double>? Speed; // bytes/sec
+    public event Action<long, long>? Progress;
+    public event Action<double>? Speed;
 
-    public SegmentedDownloader(int maxParallel = 4, HttpMessageHandler? handler = null)
+    public SegmentedDownloader(int maxParallel = 16, HttpMessageHandler? handler = null)
     {
         _maxParallel = Math.Max(1, maxParallel);
         _http = handler is null
@@ -27,11 +31,15 @@ public class SegmentedDownloader
                 {
                     AllowAutoRedirect = true,
                     AutomaticDecompression = System.Net.DecompressionMethods.All,
-                    PooledConnectionLifetime = TimeSpan.FromMinutes(10),
-                    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(5),
-                    MaxConnectionsPerServer = 10,
+                    PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+                    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(10),
+                    MaxConnectionsPerServer = 100, // Increased from 10
+                    EnableMultipleHttp2Connections = true,
                 })
-                { Timeout = TimeSpan.FromMinutes(10) }
+                { 
+                    Timeout = TimeSpan.FromMinutes(30),
+                    DefaultRequestVersion = new Version(2, 0) // Try HTTP/2 first
+                }
             : new HttpClient(handler);
     }
     
@@ -44,7 +52,7 @@ public class SegmentedDownloader
             if (res.IsSuccessStatusCode && res.Content.Headers.ContentLength.HasValue)
                 return res.Content.Headers.ContentLength.Value;
         }
-        catch { /* Ignore */ }
+        catch { }
 
         try
         {
@@ -54,7 +62,7 @@ public class SegmentedDownloader
             var cr = res2.Content.Headers.ContentRange;
             if (cr?.Length is long len) return len;
         }
-        catch { /* Ignore */ }
+        catch { }
 
         return -1;
     }
@@ -75,7 +83,7 @@ public class SegmentedDownloader
             if (total <= 0) 
                 throw new InvalidOperationException("Server không hỗ trợ tải xuống (không có Content-Length)");
             
-            // Calculate optimal segments based on file size
+            // AGGRESSIVE segment calculation for maximum speed
             segmentsCount = CalculateOptimalSegments(total, segmentsCount);
             
             meta = new DownloadMetadata { Url = url, FilePath = filePath, TotalSize = total };
@@ -89,15 +97,19 @@ public class SegmentedDownloader
                 cur += part;
             }
             await File.WriteAllTextAsync(metaPath, JsonSerializer.Serialize(meta), token);
-            using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            
+            // Pre-allocate file (faster than growing)
+            using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read, 
+                                         bufferSize: 1 << 16, FileOptions.WriteThrough);
             fs.SetLength(total);
         }
 
         var semaphore = new SemaphoreSlim(_maxParallel);
-        var tasks = new List<Task>();
+        var tasks = new System.Collections.Generic.List<Task>();
         long prevBytes = 0;
+        var speedSamples = new System.Collections.Generic.Queue<(DateTime time, long bytes)>();
 
-        // Ticker for progress and speed updates (throttled)
+        // High-frequency speed calculation
         _ = Task.Run(async () =>
         {
             while (!token.IsCancellationRequested)
@@ -110,9 +122,24 @@ public class SegmentedDownloader
                         _lastProgressUpdate = now;
                         var downloaded = meta.Segments.Sum(s => s.Downloaded);
                         Progress?.Invoke(downloaded, meta.TotalSize);
-                        var delta = downloaded - prevBytes;
-                        prevBytes = downloaded;
-                        Speed?.Invoke(delta);
+                        
+                        // Calculate speed with moving average (last 5 samples)
+                        speedSamples.Enqueue((now, downloaded));
+                        while (speedSamples.Count > 5)
+                            speedSamples.Dequeue();
+                        
+                        if (speedSamples.Count >= 2)
+                        {
+                            var first = speedSamples.First();
+                            var last = speedSamples.Last();
+                            var timeDiff = (last.time - first.time).TotalSeconds;
+                            if (timeDiff > 0)
+                            {
+                                var bytesDiff = last.bytes - first.bytes;
+                                var speed = bytesDiff / timeDiff;
+                                Speed?.Invoke(speed);
+                            }
+                        }
                     }
                     await Task.Delay(100, token);
                 }
@@ -120,6 +147,7 @@ public class SegmentedDownloader
             }
         }, token);
 
+        // Download all segments in parallel
         foreach (var seg in meta.Segments.Where(s => !s.Completed))
         {
             await semaphore.WaitAsync(token);
@@ -143,18 +171,19 @@ public class SegmentedDownloader
 
     private int CalculateOptimalSegments(long fileSize, int requestedSegments)
     {
-        // Adaptive segment count based on file size
+        // AGGRESSIVE segmentation for maximum speed
         var optimal = fileSize switch
         {
-            < 1024 * 1024 => 1,              // <1MB: 1 segment
-            < 5 * 1024 * 1024 => 2,          // 1-5MB: 2 segments
-            < 10 * 1024 * 1024 => 4,         // 5-10MB: 4 segments
-            < 50 * 1024 * 1024 => 6,         // 10-50MB: 6 segments
-            < 100 * 1024 * 1024 => 8,        // 50-100MB: 8 segments
-            _ => 10                           // >100MB: 10 segments
+            < 1024 * 1024 => 2,              // <1MB: 2 segments
+            < 5 * 1024 * 1024 => 4,          // 1-5MB: 4 segments
+            < 10 * 1024 * 1024 => 8,         // 5-10MB: 8 segments
+            < 50 * 1024 * 1024 => 16,        // 10-50MB: 16 segments
+            < 100 * 1024 * 1024 => 24,       // 50-100MB: 24 segments
+            < 500 * 1024 * 1024 => 32,       // 100-500MB: 32 segments
+            _ => 48                           // >500MB: 48 segments
         };
         
-        return Math.Min(optimal, requestedSegments);
+        return Math.Max(optimal, requestedSegments);
     }
 
     private async Task DownloadSegmentAsync(DownloadMetadata meta, DownloadSegment seg, string metaPath,
@@ -177,36 +206,57 @@ public class SegmentedDownloader
 
                     using var req = new HttpRequestMessage(HttpMethod.Get, meta.Url);
                     req.Headers.Range = new RangeHeaderValue(start, end);
+                    req.Version = new Version(2, 0); // Prefer HTTP/2
+                    
                     using var res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, token);
                     res.EnsureSuccessStatusCode();
 
                     await using var stream = await res.Content.ReadAsStreamAsync(token);
-                    await using var fs = new FileStream(meta.FilePath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    
+                    // Use async file I/O with larger buffer and no buffering
+                    await using var fs = new FileStream(meta.FilePath, FileMode.Open, FileAccess.Write, 
+                                                       FileShare.Read, _bufferSize, 
+                                                       FileOptions.Asynchronous | FileOptions.WriteThrough);
                     fs.Seek(start, SeekOrigin.Begin);
 
                     int read;
+                    long totalRead = 0;
                     while ((read = await stream.ReadAsync(buffer.AsMemory(0, _bufferSize), token)) > 0)
                     {
                         await fs.WriteAsync(buffer.AsMemory(0, read), token);
                         seg.Downloaded += read;
+                        totalRead += read;
 
-                        // Save metadata periodically
-                        if (seg.Downloaded % (256 * 1024) < _bufferSize)
+                        // Save metadata less frequently for speed (every 1MB instead of 256KB)
+                        if (totalRead % (1024 * 1024) < _bufferSize)
                         {
                             var json = JsonSerializer.Serialize(meta);
                             await File.WriteAllTextAsync(metaPath, json, token);
+                            totalRead = 0; // Reset counter
                         }
                     }
+                    
+                    // Final save
+                    if (seg.Completed)
+                    {
+                        var json = JsonSerializer.Serialize(meta);
+                        await File.WriteAllTextAsync(metaPath, json, token);
+                    }
+                    
                     break; // Success
                 }
                 catch (OperationCanceledException)
                 {
                     throw;
                 }
-                catch
+                catch (Exception ex)
                 {
                     if (attempt < maxRetries)
-                        await Task.Delay(1000 * attempt, CancellationToken.None);
+                    {
+                        // Exponential backoff with jitter
+                        var delay = (int)(1000 * Math.Pow(1.5, attempt) + Random.Shared.Next(100, 500));
+                        await Task.Delay(delay, CancellationToken.None);
+                    }
                 }
             }
         }
