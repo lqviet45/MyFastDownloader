@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Collections.Concurrent;
 using MyFastDownloader.App.Models;
 using TaskStatus = MyFastDownloader.App.Models.TaskStatus;
 
@@ -13,6 +10,7 @@ public class DownloadManager
     public event Action<DownloadTaskItem>? Updated;
 
     public void Add(DownloadTaskItem item) => Updated?.Invoke(item);
+    
     public async Task StartAsync(DownloadTaskItem item)
     {
         if (_running.ContainsKey(item.Id)) return;
@@ -47,9 +45,10 @@ public class DownloadManager
         {
             item.Status = TaskStatus.Paused;
         }
-        catch
+        catch (Exception)
         {
             item.Status = TaskStatus.Error;
+            item.SpeedBytesPerSec = 0;
         }
         finally
         {

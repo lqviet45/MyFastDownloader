@@ -1,8 +1,5 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace MyFastDownloader.App.Services;
 
@@ -40,21 +37,22 @@ public class LocalHttpServer : IDisposable
                     if (!string.IsNullOrWhiteSpace(u) && OnAddUrl is not null)
                     {
                         await OnAddUrl(u);
-                        await Respond(ctx, 200, "OK");
+                        await Respond(ctx, 200, "OK - Download added!");
                     }
-                    else await Respond(ctx, 400, "Missing url");
+                    else await Respond(ctx, 400, "Missing url parameter");
                 }
-                else await Respond(ctx, 404, "Not found");
+                else await Respond(ctx, 404, "Not found - Use /add?url=YOUR_URL");
             }
             catch when (token.IsCancellationRequested) { }
-            catch { /* ignore transient errors */ }
+            catch { /* Ignore other exceptions */ }
         }
     }
 
     private static async Task Respond(HttpListenerContext ctx, int code, string msg)
     {
         ctx.Response.StatusCode = code;
-        using var sw = new StreamWriter(ctx.Response.OutputStream);
+        ctx.Response.ContentType = "text/plain; charset=utf-8";
+        await using var sw = new StreamWriter(ctx.Response.OutputStream);
         await sw.WriteAsync(msg);
         ctx.Response.Close();
     }

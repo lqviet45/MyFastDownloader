@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
 
@@ -54,7 +55,7 @@ public class DownloadTaskItem : INotifyPropertyChanged
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
 
     // UI Properties
-    public string FileName => string.IsNullOrEmpty(FilePath) ? "Unknown" : System.IO.Path.GetFileName(FilePath);
+    public string FileName => string.IsNullOrEmpty(FilePath) ? "Unknown" : Path.GetFileName(FilePath);
     public double ProgressPercent => TotalSize > 0 ? Math.Round((double)Downloaded / TotalSize * 100, 1) : 0;
     public string SizeText => TotalSize > 0 ? $"{FormatBytes(Downloaded)} / {FormatBytes(TotalSize)}" : "Unknown size";
     public string SpeedText => SpeedBytesPerSec > 0 ? $"{FormatBytes(SpeedBytesPerSec)}/s" : "";

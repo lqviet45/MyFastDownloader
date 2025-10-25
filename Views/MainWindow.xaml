@@ -9,7 +9,6 @@
         Background="#FF0F172A">
     
     <Window.Resources>
-        <!-- Gradient Brushes -->
         <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,1">
             <GradientStop Color="#1E40AF" Offset="0"/>
             <GradientStop Color="#3730A3" Offset="1"/>
@@ -30,7 +29,6 @@
             <GradientStop Color="#D97706" Offset="1"/>
         </LinearGradientBrush>
 
-        <!-- Button Style -->
         <Style x:Key="ModernButton" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -55,7 +53,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- TextBox Style -->
         <Style x:Key="ModernTextBox" TargetType="TextBox">
             <Setter Property="Background" Value="#1E293B"/>
             <Setter Property="Foreground" Value="White"/>
@@ -82,7 +79,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- ProgressBar Style -->
         <Style x:Key="ModernProgressBar" TargetType="ProgressBar">
             <Setter Property="Height" Value="8"/>
             <Setter Property="Background" Value="#374151"/>
@@ -153,11 +149,6 @@
                              Style="{StaticResource ModernTextBox}"
                              Text="{Binding DownloadUrl, UpdateSourceTrigger=PropertyChanged}"
                              KeyDown="UrlTextBox_KeyDown">
-                        <TextBox.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="12"/>
-                            </Style>
-                        </TextBox.Resources>
                     </TextBox>
 
                     <Button x:Name="AddButton" 
@@ -192,7 +183,7 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0" Text="Danh sách tải xuống" FontSize="18" FontWeight="SemiBold" Foreground="#E2E8F0"/>
-                    <TextBlock Grid.Column="1" Text="{Binding DownloadStats}" FontSize="14" Foreground="#94A3B8"/>
+                    <TextBlock Grid.Column="1" Text="{Binding DownloadStats, Mode=OneWay}" FontSize="14" Foreground="#94A3B8"/>
                 </Grid>
 
                 <!-- Downloads List -->
@@ -231,20 +222,20 @@
 
                                         <!-- File Info -->
                                         <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding FileName}" FontWeight="Medium" FontSize="14" Foreground="#E2E8F0" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding FileSizeText}" FontSize="12" Foreground="#94A3B8" Margin="0,4,0,0"/>
+                                            <TextBlock Text="{Binding FileName, Mode=OneWay}" FontWeight="Medium" FontSize="14" Foreground="#E2E8F0" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding SizeText, Mode=OneWay}" FontSize="12" Foreground="#94A3B8" Margin="0,4,0,0"/>
                                         </StackPanel>
 
                                         <!-- Status -->
                                         <Border Grid.Column="1" 
-                                                Background="{Binding StatusBackground}" 
-                                                BorderBrush="{Binding StatusBorder}"
+                                                BorderBrush="{Binding StatusColor, Mode=OneWay}"
                                                 BorderThickness="1"
                                                 CornerRadius="20" 
                                                 Padding="12,6"
-                                                HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding StatusText}" 
-                                                       Foreground="{Binding StatusColor}" 
+                                                HorizontalAlignment="Center"
+                                                Background="#1A000000">
+                                            <TextBlock Text="{Binding StatusText, Mode=OneWay}" 
+                                                       Foreground="{Binding StatusColor, Mode=OneWay}" 
                                                        FontSize="12" 
                                                        FontWeight="Medium"
                                                        TextAlignment="Center"/>
@@ -252,10 +243,10 @@
 
                                         <!-- Progress -->
                                         <StackPanel Grid.Column="2">
-                                            <ProgressBar Value="{Binding Progress}" 
+                                            <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}" 
                                                          Maximum="100" 
                                                          Style="{StaticResource ModernProgressBar}"/>
-                                            <TextBlock Text="{Binding ProgressText}" 
+                                            <TextBlock Text="{Binding ProgressPercent, StringFormat={}{0:F0}%, Mode=OneWay}" 
                                                        FontSize="12" 
                                                        Foreground="#94A3B8" 
                                                        TextAlignment="Center"
@@ -264,7 +255,7 @@
 
                                         <!-- Speed -->
                                         <TextBlock Grid.Column="3" 
-                                                   Text="{Binding SpeedText}" 
+                                                   Text="{Binding SpeedText, Mode=OneWay}" 
                                                    FontSize="14" 
                                                    FontWeight="Medium"
                                                    Foreground="#60A5FA"
@@ -273,23 +264,56 @@
 
                                         <!-- Actions -->
                                         <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <Button Style="{StaticResource ModernButton}"
-                                                    Background="{Binding ActionButtonBackground}"
-                                                    Padding="10"
+                                            <!-- Play/Pause Button -->
+                                            <Button Padding="10"
                                                     Margin="0,0,8,0"
                                                     Click="ActionButton_Click"
-                                                    Tag="{Binding}"
-                                                    Visibility="{Binding ActionButtonVisibility}">
-                                                <TextBlock Text="{Binding ActionButtonIcon}" FontSize="12"/>
+                                                    Tag="{Binding}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButton}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Setter Property="Background" Value="{StaticResource GreenButtonGradient}"/>
+                                                        <Setter Property="Content" Value="▶"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Downloading">
+                                                                <Setter Property="Background" Value="{StaticResource OrangeButtonGradient}"/>
+                                                                <Setter Property="Content" Value="⏸"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                                <Setter Property="Background" Value="{StaticResource GreenButtonGradient}"/>
+                                                                <Setter Property="Content" Value="▶"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Error">
+                                                                <Setter Property="Background" Value="{StaticResource GreenButtonGradient}"/>
+                                                                <Setter Property="Content" Value="↻"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Queued">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
                                             </Button>
                                             
-                                            <Button Style="{StaticResource ModernButton}"
-                                                    Background="{StaticResource BlueButtonGradient}"
-                                                    Padding="10"
+                                            <!-- Open Folder Button -->
+                                            <Button Padding="10"
                                                     Click="OpenButton_Click"
-                                                    Tag="{Binding}"
-                                                    Visibility="{Binding OpenButtonVisibility}">
-                                                <TextBlock Text="📂" FontSize="12"/>
+                                                    Tag="{Binding}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource ModernButton}">
+                                                        <Setter Property="Background" Value="{StaticResource BlueButtonGradient}"/>
+                                                        <Setter Property="Content" Value="📂"/>
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
                                             </Button>
                                         </StackPanel>
                                     </Grid>
@@ -299,7 +323,7 @@
 
                         <!-- Empty State -->
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                                    Visibility="{Binding EmptyStateVisibility}">
+                                    Visibility="{Binding EmptyStateVisibility, Mode=OneWay}">
                             <TextBlock Text="📥" FontSize="64" Opacity="0.5" HorizontalAlignment="Center"/>
                             <TextBlock Text="Chưa có tải xuống nào" FontSize="16" Foreground="#64748B" Margin="0,16,0,0" HorizontalAlignment="Center"/>
                             <TextBlock Text="Nhập URL ở trên để bắt đầu tải xuống" FontSize="12" Foreground="#64748B" Margin="0,8,0,0" HorizontalAlignment="Center"/>
@@ -312,11 +336,11 @@
         <!-- Footer -->
         <Border Grid.Row="2" Background="#1E293B" BorderBrush="#334155" BorderThickness="0,1,0,0" Padding="20,16">
             <Grid>
-                <TextBlock Text="Kéo thả file hoặc nhập URL để bắt đầu tải xuống • Hỗ trợ HTTP, HTTPS, FTP" 
+                <TextBlock Text="Server đang chạy tại http://localhost:4153 • Sử dụng /add?url=YOUR_URL để thêm download" 
                            FontSize="14" 
                            Foreground="#94A3B8"
                            VerticalAlignment="Center"/>
-                <TextBlock Text="{Binding StatusMessage}" 
+                <TextBlock Text="{Binding StatusMessage, Mode=OneWay}" 
                            FontSize="12" 
                            Foreground="#60A5FA"
                            HorizontalAlignment="Right"
