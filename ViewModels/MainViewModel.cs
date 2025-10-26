@@ -103,7 +103,7 @@ public class MainViewModel : INotifyPropertyChanged
             {
                 Url = DownloadUrl,
                 FilePath = saveDialog.FileName,
-                SegmentsCount = 32, // INCREASED from 6 to 32 for maximum speed
+                SegmentsCount = 8, // Optimal for most scenarios - the downloader will adjust based on file size
                 Status = TaskStatus.Queued
             };
             
