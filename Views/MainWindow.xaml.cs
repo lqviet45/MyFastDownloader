@@ -1,5 +1,7 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -130,7 +132,17 @@ public partial class MainWindow : Window
 
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
-        ShowNotification("⚙ Cài đặt sẽ sớm được thêm trong phiên bản tới!", NotificationType.Info);
+        var settingsWindow = new SettingsWindow
+        {
+            Owner = this
+        };
+        
+        if (settingsWindow.ShowDialog() == true)
+        {
+            // Reload settings in ViewModel
+            _viewModel.ReloadSettings();
+            ShowNotification("✓ Cài đặt đã được lưu!", NotificationType.Success);
+        }
     }
 
     private void CopyBookmarkButton_Click(object sender, RoutedEventArgs e)

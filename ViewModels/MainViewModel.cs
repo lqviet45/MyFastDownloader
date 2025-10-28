@@ -18,6 +18,8 @@ public class MainViewModel : INotifyPropertyChanged
     private string _downloadUrl = "";
     private string _statusMessage = "";
     private readonly DownloadManager _downloadManager;
+    private readonly SettingsService _settingsService;
+    private AppSettings _settings;
 
     public ObservableCollection<DownloadTaskItem> Downloads { get; set; }
 
@@ -52,6 +54,8 @@ public class MainViewModel : INotifyPropertyChanged
     }
 
     public Visibility EmptyStateVisibility => Downloads.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    
+    public string DefaultDownloadFolder => _settings.DefaultDownloadFolder;
 
     public MainViewModel()
     {
@@ -64,6 +68,23 @@ public class MainViewModel : INotifyPropertyChanged
 
         _downloadManager = App.GetDownloadManager() ?? new DownloadManager();
         _downloadManager.Updated += OnDownloadUpdated;
+        
+        // Initialize settings
+        _settingsService = App.GetSettingsService() ?? new SettingsService();
+        _settings = new AppSettings();
+        _ = LoadSettingsAsync();
+    }
+    
+    private async Task LoadSettingsAsync()
+    {
+        _settings = await _settingsService.LoadSettingsAsync();
+        OnPropertyChanged(nameof(DefaultDownloadFolder));
+    }
+    
+    public async void ReloadSettings()
+    {
+        _settings = await _settingsService.LoadSettingsAsync();
+        OnPropertyChanged(nameof(DefaultDownloadFolder));
     }
 
     private void OnDownloadUpdated(DownloadTaskItem item)
@@ -85,25 +106,63 @@ public class MainViewModel : INotifyPropertyChanged
         try
         {
             var fileName = GetFileNameFromUrl(DownloadUrl);
+            string filePath;
             
-            var saveDialog = new SaveFileDialog
+            // Check if should always ask or use default folder
+            if (_settings.AlwaysAskSaveLocation)
             {
-                FileName = fileName,
-                Filter = "All Files (*.*)|*.*",
-                Title = "Chọn vị trí lưu file",
-                InitialDirectory = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "Downloads")
-            };
-            
-            if (saveDialog.ShowDialog() != true)
-                return;
+                // Show dialog
+                var saveDialog = new SaveFileDialog
+                {
+                    FileName = fileName,
+                    Filter = "All Files (*.*)|*.*",
+                    Title = "Chọn vị trí lưu file",
+                    InitialDirectory = _settings.DefaultDownloadFolder
+                };
+                
+                if (saveDialog.ShowDialog() != true)
+                    return;
+                
+                filePath = saveDialog.FileName;
+            }
+            else
+            {
+                // Use default folder
+                filePath = Path.Combine(_settings.DefaultDownloadFolder, fileName);
+                
+                // Check if file exists and ask to overwrite
+                if (File.Exists(filePath))
+                {
+                    var result = MessageBox.Show(
+                        $"File '{fileName}' đã tồn tại. Bạn có muốn ghi đè?",
+                        "File đã tồn tại",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+                    
+                    if (result == MessageBoxResult.No)
+                    {
+                        // Show save dialog to choose different name
+                        var saveDialog = new SaveFileDialog
+                        {
+                            FileName = fileName,
+                            Filter = "All Files (*.*)|*.*",
+                            Title = "Chọn vị trí lưu file",
+                            InitialDirectory = _settings.DefaultDownloadFolder
+                        };
+                        
+                        if (saveDialog.ShowDialog() != true)
+                            return;
+                        
+                        filePath = saveDialog.FileName;
+                    }
+                }
+            }
 
             var item = new DownloadTaskItem
             {
                 Url = DownloadUrl,
-                FilePath = saveDialog.FileName,
-                SegmentsCount = 8, // Optimal for most scenarios - the downloader will adjust based on file size
+                FilePath = filePath,
+                SegmentsCount = _settings.DefaultSegmentCount,
                 Status = TaskStatus.Queued
             };
             

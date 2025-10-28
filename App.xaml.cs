@@ -9,10 +9,14 @@ public partial class App : Application
 {
     private LocalHttpServer? _httpServer;
     private static DownloadManager? _downloadManager;
+    private static SettingsService? _settingsService;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        
+        // Initialize settings service
+        _settingsService = new SettingsService();
         
         // Initialize download manager (singleton for the app)
         _downloadManager = new DownloadManager();
@@ -57,4 +61,5 @@ public partial class App : Application
     }
     
     public static DownloadManager? GetDownloadManager() => _downloadManager;
+    public static SettingsService? GetSettingsService() => _settingsService;
 }

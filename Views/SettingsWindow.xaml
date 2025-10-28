@@ -1,0 +1,237 @@
+<Window x:Class="MyFastDownloader.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cài đặt - MyFastDownloader" 
+        Height="500" 
+        Width="700"
+        WindowStartupLocation="CenterOwner"
+        Background="#FF0F172A"
+        ResizeMode="NoResize">
+
+    <Window.Resources>
+        <LinearGradientBrush x:Key="ButtonGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#475569" Offset="0"/>
+            <GradientStop Color="#64748B" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <LinearGradientBrush x:Key="SuccessGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#10B981" Offset="0"/>
+            <GradientStop Color="#059669" Offset="1"/>
+        </LinearGradientBrush>
+        
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="{StaticResource ButtonGradient}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="10" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" 
+                   Text="⚙ Cài đặt" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   Foreground="#E2E8F0"
+                   Margin="0,0,0,20"/>
+
+        <!-- Settings Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Download Folder Section -->
+                <Border Background="#1E293B" 
+                        CornerRadius="12" 
+                        Padding="20"
+                        Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="📁 Thư mục tải xuống" 
+                                   FontSize="18" 
+                                   FontWeight="SemiBold" 
+                                   Foreground="#E2E8F0"
+                                   Margin="0,0,0,16"/>
+                        
+                        <!-- Default Folder -->
+                        <TextBlock Text="Thư mục mặc định:" 
+                                   FontSize="14" 
+                                   Foreground="#94A3B8"
+                                   Margin="0,0,0,8"/>
+                        
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <TextBox x:Name="DefaultFolderTextBox"
+                                     Grid.Column="0"
+                                     Text="{Binding DefaultDownloadFolder, Mode=TwoWay}"
+                                     IsReadOnly="True"
+                                     Background="#334155"
+                                     Foreground="White"
+                                     Padding="12,10"
+                                     FontSize="13"
+                                     VerticalContentAlignment="Center"
+                                     BorderThickness="0"/>
+                            
+                            <Button Grid.Column="1"
+                                    Content="📂 Chọn"
+                                    Style="{StaticResource ModernButton}"
+                                    Margin="8,0,0,0"
+                                    Click="BrowseFolderButton_Click"/>
+                            
+                            <Button Grid.Column="2"
+                                    Content="↻ Mặc định"
+                                    Style="{StaticResource ModernButton}"
+                                    Margin="8,0,0,0"
+                                    Click="ResetFolderButton_Click"/>
+                        </Grid>
+                        
+                        <!-- Always Ask Option -->
+                        <CheckBox x:Name="AlwaysAskCheckBox"
+                                  Content="Luôn hỏi vị trí lưu file"
+                                  IsChecked="{Binding AlwaysAskSaveLocation, Mode=TwoWay}"
+                                  Foreground="#E2E8F0"
+                                  FontSize="14"
+                                  Margin="0,0,0,8"/>
+                        
+                        <TextBlock Text="Nếu bật, bạn sẽ được hỏi vị trí lưu mỗi khi thêm download mới"
+                                   FontSize="12"
+                                   Foreground="#64748B"
+                                   TextWrapping="Wrap"
+                                   Margin="24,0,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Download Settings Section -->
+                <Border Background="#1E293B" 
+                        CornerRadius="12" 
+                        Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="⚡ Cài đặt tải xuống" 
+                                   FontSize="18" 
+                                   FontWeight="SemiBold" 
+                                   Foreground="#E2E8F0"
+                                   Margin="0,0,0,16"/>
+                        
+                        <!-- Segment Count -->
+                        <TextBlock Text="Số kết nối song song:" 
+                                   FontSize="14" 
+                                   Foreground="#94A3B8"
+                                   Margin="0,0,0,8"/>
+                        
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Slider x:Name="SegmentCountSlider"
+                                    Grid.Column="0"
+                                    Minimum="1"
+                                    Maximum="16"
+                                    Value="{Binding DefaultSegmentCount, Mode=TwoWay}"
+                                    TickFrequency="1"
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"/>
+                            
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding ElementName=SegmentCountSlider, Path=Value, StringFormat={}{0:F0}}"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="#60A5FA"
+                                       Width="30"
+                                       TextAlignment="Center"
+                                       Margin="16,0,0,0"/>
+                        </Grid>
+                        
+                        <TextBlock Text="Nhiều kết nối = tải nhanh hơn, nhưng tốn nhiều tài nguyên hơn"
+                                   FontSize="12"
+                                   Foreground="#64748B"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,16"/>
+                        
+                        <!-- Max Concurrent Downloads -->
+                        <TextBlock Text="Số download đồng thời tối đa:" 
+                                   FontSize="14" 
+                                   Foreground="#94A3B8"
+                                   Margin="0,0,0,8"/>
+                        
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <Slider x:Name="MaxConcurrentSlider"
+                                    Grid.Column="0"
+                                    Minimum="1"
+                                    Maximum="10"
+                                    Value="{Binding MaxConcurrentDownloads, Mode=TwoWay}"
+                                    TickFrequency="1"
+                                    IsSnapToTickEnabled="True"
+                                    VerticalAlignment="Center"/>
+                            
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding ElementName=MaxConcurrentSlider, Path=Value, StringFormat={}{0:F0}}"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="#60A5FA"
+                                       Width="30"
+                                       TextAlignment="Center"
+                                       Margin="16,0,0,0"/>
+                        </Grid>
+                        
+                        <TextBlock Text="Giới hạn số lượng download chạy cùng lúc"
+                                   FontSize="12"
+                                   Foreground="#64748B"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer Buttons -->
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Button Grid.Column="1"
+                    Content="✓ Lưu"
+                    Style="{StaticResource ModernButton}"
+                    Width="120"
+                    Click="SaveButton_Click"
+                    Background="{StaticResource SuccessGradient}"/>
+            
+            <Button Grid.Column="2"
+                    Content="✗ Hủy"
+                    Style="{StaticResource ModernButton}"
+                    Width="120"
+                    Margin="12,0,0,0"
+                    Click="CancelButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>
