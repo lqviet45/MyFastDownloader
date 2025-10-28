@@ -1,7 +1,7 @@
 <!--
-    MyFastDownloader - Improved Modern UI
-    Inspired by modern web design patterns
-    Features: Smooth animations, modern gradients, enhanced UX
+    MyFastDownloader - Improved Modern UI (FIXED)
+    Fixed: Removed invalid animation property path that was causing crash
+    The TextBox focus animation now uses simple Triggers instead of Storyboard
 -->
 <Window x:Class="MyFastDownloader.App.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -75,17 +75,6 @@
             </DoubleAnimation>
         </Storyboard>
 
-        <Storyboard x:Key="SlideInAnimation">
-            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
-                           From="20" To="0" Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                           From="0" To="1" Duration="0:0:0.3"/>
-        </Storyboard>
-
         <!-- Modern Button Style with Hover Effects -->
         <Style x:Key="ModernButton" TargetType="Button">
             <Setter Property="Foreground" Value="White"/>
@@ -113,30 +102,6 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="border" Property="Background" Value="{StaticResource ButtonHoverGradient}"/>
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="border"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                           To="1.02" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="border"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                           To="1.02" Duration="0:0:0.1"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="border"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                           To="1" Duration="0:0:0.1"/>
-                                            <DoubleAnimation Storyboard.TargetName="border"
-                                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                           To="1" Duration="0:0:0.1"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="border" Property="RenderTransform">
@@ -149,15 +114,10 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-            <Setter Property="RenderTransform">
-                <Setter.Value>
-                    <ScaleTransform ScaleX="1" ScaleY="1"/>
-                </Setter.Value>
-            </Setter>
             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
         </Style>
 
-        <!-- Modern TextBox Style with Glassmorphism -->
+        <!-- Modern TextBox Style - FIXED VERSION (simplified, no effect animations) -->
         <Style x:Key="ModernTextBox" TargetType="TextBox">
             <Setter Property="Background">
                 <Setter.Value>
@@ -182,9 +142,6 @@
                                 BorderBrush="{TemplateBinding BorderBrush}" 
                                 BorderThickness="{TemplateBinding BorderThickness}" 
                                 CornerRadius="12">
-                            <Border.Effect>
-                                <BlurEffect x:Name="blur" Radius="0"/>
-                            </Border.Effect>
                             <ScrollViewer x:Name="PART_ContentHost" 
                                         Margin="{TemplateBinding Padding}"
                                         VerticalAlignment="Center"/>
@@ -192,19 +149,20 @@
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsFocused" Value="True">
                                 <Setter TargetName="border" Property="BorderBrush" Value="#60A5FA"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="2"/>
                                 <Setter TargetName="border" Property="Background">
                                     <Setter.Value>
                                         <SolidColorBrush Color="White" Opacity="0.15"/>
                                     </Setter.Value>
                                 </Setter>
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetProperty="(Border.Effect).(DropShadowEffect.BlurRadius)"
-                                                           To="16" Duration="0:0:0.2"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
+                                <Setter TargetName="border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="16" 
+                                                        ShadowDepth="0" 
+                                                        Color="#60A5FA" 
+                                                        Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -287,13 +245,7 @@
                 <!-- App Title with Icon -->
                 <StackPanel Grid.Row="0" 
                            Orientation="Horizontal" 
-                           Margin="0,0,0,20"
-                           Opacity="0">
-                    <StackPanel.Triggers>
-                        <EventTrigger RoutedEvent="Loaded">
-                            <BeginStoryboard Storyboard="{StaticResource FadeInAnimation}"/>
-                        </EventTrigger>
-                    </StackPanel.Triggers>
+                           Margin="0,0,0,20">
                     
                     <Border Background="White" 
                             CornerRadius="10" 
@@ -340,11 +292,6 @@
                              Style="{StaticResource ModernTextBox}"
                              Text="{Binding DownloadUrl, UpdateSourceTrigger=PropertyChanged}"
                              KeyDown="UrlTextBox_KeyDown">
-                        <TextBox.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="12"/>
-                            </Style>
-                        </TextBox.Resources>
                     </TextBox>
 
                     <Button x:Name="AddButton" 
@@ -623,19 +570,10 @@
                             </ListView.ItemTemplate>
                         </ListView>
 
-                        <!-- Empty State with Animation -->
+                        <!-- Empty State -->
                         <StackPanel VerticalAlignment="Center" 
                                     HorizontalAlignment="Center"
-                                    Visibility="{Binding EmptyStateVisibility, Mode=OneWay}"
-                                    Opacity="0">
-                            <StackPanel.Triggers>
-                                <EventTrigger RoutedEvent="Loaded">
-                                    <BeginStoryboard Storyboard="{StaticResource FadeInAnimation}"/>
-                                </EventTrigger>
-                            </StackPanel.Triggers>
-                            <StackPanel.RenderTransform>
-                                <TranslateTransform Y="0"/>
-                            </StackPanel.RenderTransform>
+                                    Visibility="{Binding EmptyStateVisibility, Mode=OneWay}">
                             
                             <Viewbox Width="120" Height="120" Margin="0,0,0,24">
                                 <Canvas Width="24" Height="24">
