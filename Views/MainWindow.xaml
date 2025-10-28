@@ -314,7 +314,7 @@
                             Margin="12,0,0,0"
                             ToolTip="Cài đặt"
                             Click="SettingsButton_Click">
-                        <TextBlock Text="⚙" FontSize="18"/>
+                        <TextBlock Text="⚙" FontSize="15"/>
                     </Button>
                 </Grid>
             </Grid>

@@ -41,6 +41,8 @@ A modern, fast, and reliable download manager built with .NET 9 and WPF, featuri
 - **Automatic Resume**: Intelligently resume interrupted downloads from where they left off
 - **Queue Management**: Handle multiple downloads with automatic queue processing
 - **Progress Tracking**: Real-time progress monitoring with accurate speed calculations
+- **⭐ Default Save Folder**: Set default download location once - no more repetitive dialogs! (NEW!)
+- **Settings Management**: Configure segments, concurrent downloads, and folder preferences (NEW!)
 
 #### Performance & Reliability
 - **Smart Speed Calculation**: Moving average algorithm for smooth, accurate speed display
@@ -72,7 +74,7 @@ A modern, fast, and reliable download manager built with .NET 9 and WPF, featuri
 - **Download Speed Limiting**: Control global and per-download speed limits
 - **Proxy Support**: HTTP/HTTPS/SOCKS proxy configuration with authentication
 - **HTTP Authentication**: Support for Basic, Digest, and NTLM authentication
-- **Settings Dialog**: Centralized configuration management
+- ~~**Settings Dialog**: Centralized configuration management~~ ✅ **COMPLETED!**
 
 #### Version 1.2 (Organization Features)
 - **Download Categories**: Organize downloads by type (Documents, Videos, Software, etc.)
@@ -117,8 +119,8 @@ A modern, fast, and reliable download manager built with .NET 9 and WPF, featuri
 ### Option 1: Download Pre-built Binary (Recommended)
 
 1. **Download the latest release**
-    - Visit the [Releases](https://github.com/yourusername/MyFastDownloader/releases) page
-    - Download `MyFastDownloader-v1.0.0-win-x64.zip`
+   - Visit the [Releases](https://github.com/yourusername/MyFastDownloader/releases) page
+   - Download `MyFastDownloader-v1.0.0-win-x64.zip`
 
 2. **Extract and run**
    ```
@@ -127,8 +129,8 @@ A modern, fast, and reliable download manager built with .NET 9 and WPF, featuri
    ```
 
 3. **First-time setup** (optional)
-    - Allow Windows Firewall access for browser integration
-    - Set up browser bookmarklet from footer
+   - Allow Windows Firewall access for browser integration
+   - Set up browser bookmarklet from footer
 
 ### Option 2: Build from Source
 
