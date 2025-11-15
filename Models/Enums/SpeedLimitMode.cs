@@ -1,4 +1,4 @@
-﻿namespace MyFastDownloader.App.Models;
+﻿namespace MyFastDownloader.App.Models.Enums;
 
 /// <summary>
 /// Speed limiting modes for downloads

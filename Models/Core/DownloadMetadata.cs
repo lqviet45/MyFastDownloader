@@ -1,4 +1,4 @@
-﻿namespace MyFastDownloader.App.Models;
+﻿namespace MyFastDownloader.App.Models.Core;
 
 public class DownloadMetadata
 {

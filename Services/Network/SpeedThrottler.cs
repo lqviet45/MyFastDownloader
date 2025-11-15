@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace MyFastDownloader.App.Services;
+namespace MyFastDownloader.App.Services.Network;
 
 /// <summary>
 /// Speed throttler using Token Bucket algorithm for smooth bandwidth limiting

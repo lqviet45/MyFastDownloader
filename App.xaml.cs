@@ -1,5 +1,7 @@
 ﻿using System.Windows;
-using MyFastDownloader.App.Services;
+using MyFastDownloader.App.Services.Core;
+using MyFastDownloader.App.Services.Network;
+using MyFastDownloader.App.Services.Storage;
 using MyFastDownloader.App.ViewModels;
 using MyFastDownloader.App.Views;
 

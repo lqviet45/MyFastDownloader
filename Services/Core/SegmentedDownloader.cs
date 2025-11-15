@@ -10,9 +10,10 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using MyFastDownloader.App.Models;
+using MyFastDownloader.App.Models.Core;
+using MyFastDownloader.App.Services.Network;
 
-namespace MyFastDownloader.App.Services;
+namespace MyFastDownloader.App.Services.Core;
 
 public class SegmentedDownloader : IDisposable
 {

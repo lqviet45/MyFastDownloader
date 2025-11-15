@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace MyFastDownloader.App.Models;
+namespace MyFastDownloader.App.Models.Settings;
 
 /// <summary>
 /// Application settings for persistence

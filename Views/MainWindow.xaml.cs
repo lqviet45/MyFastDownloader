@@ -7,9 +7,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using MyFastDownloader.App.Models;
+using MyFastDownloader.App.Models.Core;
 using MyFastDownloader.App.ViewModels;
-using TaskStatus = MyFastDownloader.App.Models.TaskStatus;
+using TaskStatus = MyFastDownloader.App.Models.Enums.TaskStatus;
 
 namespace MyFastDownloader.App.Views;
 

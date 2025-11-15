@@ -1,4 +1,4 @@
-﻿namespace MyFastDownloader.App.Models;
+﻿namespace MyFastDownloader.App.Models.Enums;
 
 public enum TaskStatus
 {

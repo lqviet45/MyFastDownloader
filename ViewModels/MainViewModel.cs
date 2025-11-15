@@ -7,9 +7,11 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
-using MyFastDownloader.App.Models;
-using MyFastDownloader.App.Services;
-using TaskStatus = MyFastDownloader.App.Models.TaskStatus;
+using MyFastDownloader.App.Models.Core;
+using MyFastDownloader.App.Models.Settings;
+using MyFastDownloader.App.Services.Core;
+using MyFastDownloader.App.Services.Storage;
+using TaskStatus = MyFastDownloader.App.Models.Enums.TaskStatus;
 
 namespace MyFastDownloader.App.ViewModels;
 

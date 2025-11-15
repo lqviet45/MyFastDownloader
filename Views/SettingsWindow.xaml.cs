@@ -5,8 +5,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
-using MyFastDownloader.App.Models;
-using MyFastDownloader.App.Services;
+using MyFastDownloader.App.Models.Settings;
+using MyFastDownloader.App.Services.Storage;
+using MyFastDownloader.App.Services.Network;
 
 namespace MyFastDownloader.App.Views;
 

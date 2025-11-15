@@ -2,9 +2,9 @@
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
-using MyFastDownloader.App.Models;
+using MyFastDownloader.App.Models.Settings;
 
-namespace MyFastDownloader.App.Services;
+namespace MyFastDownloader.App.Services.Storage;
 
 /// <summary>
 /// Service for managing application settings persistence

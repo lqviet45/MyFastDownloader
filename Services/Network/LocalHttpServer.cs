@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Net;
 
-namespace MyFastDownloader.App.Services;
+namespace MyFastDownloader.App.Services.Network;
 
 public class LocalHttpServer : IDisposable
 {

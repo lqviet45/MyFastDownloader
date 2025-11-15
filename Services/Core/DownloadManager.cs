@@ -3,10 +3,13 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using MyFastDownloader.App.Models;
-using TaskStatus = MyFastDownloader.App.Models.TaskStatus;
+using MyFastDownloader.App.Models.Enums;
+using MyFastDownloader.App.Models.Core;
+using TaskStatus = MyFastDownloader.App.Models.Enums.TaskStatus;
+using MyFastDownloader.App.Services.Storage;
+using MyFastDownloader.App.Services.Network;
 
-namespace MyFastDownloader.App.Services;
+namespace MyFastDownloader.App.Services.Core;
 
 public class DownloadManager
 {

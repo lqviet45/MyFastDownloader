@@ -2,8 +2,11 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
+using MyFastDownloader.App.Models.Enums;
+using TaskStatus = MyFastDownloader.App.Models.Enums.TaskStatus;
 
-namespace MyFastDownloader.App.Models;
+
+namespace MyFastDownloader.App.Models.Core;
 
 public class DownloadTaskItem : INotifyPropertyChanged
 {
