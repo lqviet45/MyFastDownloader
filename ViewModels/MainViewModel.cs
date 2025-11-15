@@ -1,21 +1,24 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
 using MyFastDownloader.App.Models.Core;
+using MyFastDownloader.App.Models.Enums;
 using MyFastDownloader.App.Models.Settings;
 using MyFastDownloader.App.Services.Core;
 using MyFastDownloader.App.Services.Storage;
+using MyFastDownloader.App.ViewModels.Base;
 using TaskStatus = MyFastDownloader.App.Models.Enums.TaskStatus;
 
 namespace MyFastDownloader.App.ViewModels;
 
-public class MainViewModel : INotifyPropertyChanged
+/// <summary>
+/// ViewModel for the main application window
+/// </summary>
+public class MainViewModel : ViewModelBase
 {
     private string _downloadUrl = "";
     private string _statusMessage = "";
@@ -28,21 +31,13 @@ public class MainViewModel : INotifyPropertyChanged
     public string DownloadUrl
     {
         get => _downloadUrl;
-        set
-        {
-            _downloadUrl = value;
-            OnPropertyChanged();
-        }
+        set => SetProperty(ref _downloadUrl, value);
     }
 
     public string StatusMessage
     {
         get => _statusMessage;
-        set
-        {
-            _statusMessage = value;
-            OnPropertyChanged();
-        }
+        set => SetProperty(ref _statusMessage, value);
     }
 
     public string DownloadStats
@@ -207,11 +202,5 @@ public class MainViewModel : INotifyPropertyChanged
     public void PauseDownload(DownloadTaskItem item)
     {
         _downloadManager.Pause(item);
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 }
