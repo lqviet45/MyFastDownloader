@@ -11,7 +11,41 @@ namespace MyFastDownloader.App.Services;
 public class DownloadManager
 {
     private readonly ConcurrentDictionary<Guid, (DownloadTaskItem item, CancellationTokenSource cts)> _running = new();
+    private readonly SettingsService _settingsService;
+    
     public event Action<DownloadTaskItem>? Updated;
+
+    public DownloadManager()
+    {
+        _settingsService = App.GetSettingsService() ?? new SettingsService();
+        _ = InitializeGlobalSpeedLimitAsync();
+    }
+    
+    private async Task InitializeGlobalSpeedLimitAsync()
+    {
+        try
+        {
+            var settings = await _settingsService.LoadSettingsAsync();
+            GlobalSpeedThrottler.Instance.Configure(
+                settings.EnableSpeedLimit, 
+                settings.GlobalSpeedLimitBytesPerSec
+            );
+            
+            LogDebug($"Global speed limit initialized: {(settings.EnableSpeedLimit ? $"{settings.GlobalSpeedLimitKBps:F1} KB/s" : "Disabled")}");
+        }
+        catch (Exception ex)
+        {
+            LogError("Failed to initialize global speed limit", ex);
+        }
+    }
+    
+    /// <summary>
+    /// Update global speed limit settings
+    /// </summary>
+    public async Task UpdateGlobalSpeedLimitAsync()
+    {
+        await InitializeGlobalSpeedLimitAsync();
+    }
 
     private void LogDebug(string message)
     {
@@ -49,10 +83,30 @@ public class DownloadManager
         LogDebug($"URL: {item.Url}");
         LogDebug($"File path: {item.FilePath}");
         LogDebug($"Segments: {item.SegmentsCount}");
+        LogDebug($"Speed limit mode: {item.SpeedLimitMode}");
 
-        // Use reasonable number of parallel connections (8 is optimal for most cases)
         var maxParallel = Math.Min(item.SegmentsCount, 8);
         var engine = new SegmentedDownloader(maxParallel: maxParallel);
+        
+        // Configure speed limiting based on item's SpeedLimitMode
+        switch (item.SpeedLimitMode)
+        {
+            case SpeedLimitMode.Unlimited:
+                engine.DisableSpeedLimit();
+                LogDebug("Speed limiting: Disabled");
+                break;
+                
+            case SpeedLimitMode.Global:
+                engine.UseGlobalSpeedLimit();
+                var globalLimit = GlobalSpeedThrottler.Instance.GetSpeedLimit();
+                LogDebug($"Speed limiting: Global ({globalLimit / 1024.0:F1} KB/s)");
+                break;
+                
+            case SpeedLimitMode.Custom:
+                engine.SetCustomSpeedLimit(item.CustomSpeedLimitBytesPerSec);
+                LogDebug($"Speed limiting: Custom ({item.CustomSpeedLimitKBps:F1} KB/s)");
+                break;
+        }
         
         engine.Progress += (dl, total) =>
         {
@@ -97,6 +151,7 @@ public class DownloadManager
         {
             Updated?.Invoke(item);
             _running.TryRemove(item.Id, out _);
+            engine.Dispose();
         }
     }
 

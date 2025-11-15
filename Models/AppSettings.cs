@@ -28,6 +28,16 @@ public class AppSettings
     public int MaxConcurrentDownloads { get; set; } = 3;
     
     /// <summary>
+    /// Enable global speed limiting
+    /// </summary>
+    public bool EnableSpeedLimit { get; set; } = false;
+    
+    /// <summary>
+    /// Global speed limit in bytes per second (0 = unlimited)
+    /// </summary>
+    public long GlobalSpeedLimitBytesPerSec { get; set; } = 0;
+    
+    /// <summary>
     /// Gets the default Windows Downloads folder
     /// </summary>
     private static string GetDefaultDownloadsFolder()
@@ -35,5 +45,23 @@ public class AppSettings
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             "Downloads");
+    }
+    
+    /// <summary>
+    /// Helper to get speed limit in KB/s
+    /// </summary>
+    public double GlobalSpeedLimitKBps
+    {
+        get => GlobalSpeedLimitBytesPerSec / 1024.0;
+        set => GlobalSpeedLimitBytesPerSec = (long)(value * 1024);
+    }
+    
+    /// <summary>
+    /// Helper to get speed limit in MB/s
+    /// </summary>
+    public double GlobalSpeedLimitMBps
+    {
+        get => GlobalSpeedLimitBytesPerSec / (1024.0 * 1024.0);
+        set => GlobalSpeedLimitBytesPerSec = (long)(value * 1024 * 1024);
     }
 }

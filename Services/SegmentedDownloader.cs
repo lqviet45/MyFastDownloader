@@ -28,9 +28,13 @@ public class SegmentedDownloader : IDisposable
 
     // Speed calculation with moving average
     private readonly Queue<SpeedSample> _speedSamples = new();
-    private const int MaxSpeedSamples = 10; // Keep last 10 samples (5 seconds at 500ms intervals)
+    private const int MaxSpeedSamples = 10;
     private DateTime _lastSpeedSample = DateTime.MinValue;
     private long _lastSpeedBytes = 0;
+    
+    // Speed throttling
+    private SpeedThrottler? _customThrottler = null;
+    private bool _useGlobalThrottler = true;
 
     public event Action<long, long>? Progress;
     public event Action<double>? Speed;
@@ -57,6 +61,47 @@ public class SegmentedDownloader : IDisposable
         }
         
         LogDebug($"Initialized with {_maxParallel} parallel connections");
+    }
+    
+    /// <summary>
+    /// Set custom speed limit for this downloader (bytes per second)
+    /// </summary>
+    public void SetCustomSpeedLimit(long bytesPerSecond)
+    {
+        if (bytesPerSecond <= 0)
+        {
+            _customThrottler = null;
+            _useGlobalThrottler = true;
+            return;
+        }
+        
+        if (_customThrottler == null)
+        {
+            _customThrottler = new SpeedThrottler(bytesPerSecond);
+        }
+        else
+        {
+            _customThrottler.UpdateSpeedLimit(bytesPerSecond);
+        }
+        _useGlobalThrottler = false;
+    }
+    
+    /// <summary>
+    /// Clear custom speed limit and use global throttling
+    /// </summary>
+    public void UseGlobalSpeedLimit()
+    {
+        _customThrottler = null;
+        _useGlobalThrottler = true;
+    }
+    
+    /// <summary>
+    /// Disable all speed limiting for this downloader
+    /// </summary>
+    public void DisableSpeedLimit()
+    {
+        _customThrottler = null;
+        _useGlobalThrottler = false;
     }
     
     private void LogDebug(string message)
@@ -309,14 +354,12 @@ public class SegmentedDownloader : IDisposable
                 var now = DateTime.Now;
                 var downloaded = meta.Segments.Sum(s => s.Downloaded);
                 
-                // Update progress frequently (every 100ms)
                 if (now - _lastProgressUpdate >= ProgressInterval)
                 {
                     _lastProgressUpdate = now;
                     Progress?.Invoke(downloaded, meta.TotalSize);
                 }
                 
-                // Calculate speed with moving average (every 500ms)
                 var timeSinceLastSample = (now - _lastSpeedSample).TotalSeconds;
                 if (timeSinceLastSample >= 0.5)
                 {
@@ -324,10 +367,8 @@ public class SegmentedDownloader : IDisposable
                     
                     if (bytesDiff > 0 && timeSinceLastSample > 0)
                     {
-                        // Calculate instantaneous speed
                         var instantSpeed = bytesDiff / timeSinceLastSample;
                         
-                        // Add to samples queue
                         lock (_speedSamples)
                         {
                             _speedSamples.Enqueue(new SpeedSample 
@@ -336,14 +377,11 @@ public class SegmentedDownloader : IDisposable
                                 BytesPerSecond = instantSpeed 
                             });
                             
-                            // Keep only recent samples (last 5 seconds)
                             while (_speedSamples.Count > MaxSpeedSamples)
                             {
                                 _speedSamples.Dequeue();
                             }
                             
-                            // Calculate moving average for smooth display
-                            // Give more weight to recent samples (weighted average)
                             if (_speedSamples.Count > 0)
                             {
                                 var samples = _speedSamples.ToList();
@@ -352,7 +390,6 @@ public class SegmentedDownloader : IDisposable
                                 
                                 for (int i = 0; i < samples.Count; i++)
                                 {
-                                    // Recent samples get more weight (1, 2, 3, 4, 5...)
                                     double weight = i + 1;
                                     weightedSum += samples[i].BytesPerSecond * weight;
                                     weightTotal += weight;
@@ -437,16 +474,39 @@ public class SegmentedDownloader : IDisposable
                     
                     while ((read = await stream.ReadAsync(buffer.AsMemory(0, _bufferSize), token)) > 0)
                     {
-                        await fs.WriteAsync(buffer.AsMemory(0, read), token);
+                        // Apply speed throttling
+                        int bytesToWrite = read;
                         
-                        lock (_progressLock)
+                        // Check custom throttler first
+                        if (_customThrottler != null && _customThrottler.IsEnabled())
                         {
-                            seg.Downloaded += read;
+                            bytesToWrite = await _customThrottler.ThrottleAsync(read, token);
+                        }
+                        // Then check global throttler
+                        else if (_useGlobalThrottler)
+                        {
+                            var globalThrottler = GlobalSpeedThrottler.Instance.GetThrottler();
+                            if (globalThrottler != null)
+                            {
+                                bytesToWrite = await globalThrottler.ThrottleAsync(read, token);
+                            }
                         }
                         
-                        segmentBytesRead += read;
+                        if (bytesToWrite > 0)
+                        {
+                            await fs.WriteAsync(buffer.AsMemory(0, bytesToWrite), token);
+                            
+                            lock (_progressLock)
+                            {
+                                seg.Downloaded += bytesToWrite;
+                            }
+                            
+                            segmentBytesRead += bytesToWrite;
+                        }
+                        
+                        // If we couldn't write all bytes due to throttling, we need to read less next time
+                        // For simplicity, we continue - the throttler will handle the pacing
 
-                        // Save metadata every 5MB
                         if (segmentBytesRead - lastMetadataSave >= 5 * 1024 * 1024)
                         {
                             try

@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Cài đặt - MyFastDownloader" 
-        Height="500" 
-        Width="700"
+        Height="650" 
+        Width="750"
         WindowStartupLocation="CenterOwner"
         Background="#FF0F172A"
         ResizeMode="NoResize">
@@ -70,7 +70,6 @@
                                    Foreground="#E2E8F0"
                                    Margin="0,0,0,16"/>
                         
-                        <!-- Default Folder -->
                         <TextBlock Text="Thư mục mặc định:" 
                                    FontSize="14" 
                                    Foreground="#94A3B8"
@@ -107,7 +106,6 @@
                                     Click="ResetFolderButton_Click"/>
                         </Grid>
                         
-                        <!-- Always Ask Option -->
                         <CheckBox x:Name="AlwaysAskCheckBox"
                                   Content="Luôn hỏi vị trí lưu file"
                                   IsChecked="{Binding AlwaysAskSaveLocation, Mode=TwoWay}"
@@ -123,18 +121,125 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Download Settings Section -->
+                <!-- Speed Limiting Section - NEW -->
                 <Border Background="#1E293B" 
                         CornerRadius="12" 
-                        Padding="20">
+                        Padding="20"
+                        Margin="0,0,0,16">
                     <StackPanel>
-                        <TextBlock Text="⚡ Cài đặt tải xuống" 
+                        <TextBlock Text="⚡ Giới hạn tốc độ" 
                                    FontSize="18" 
                                    FontWeight="SemiBold" 
                                    Foreground="#E2E8F0"
                                    Margin="0,0,0,16"/>
                         
-                        <!-- Segment Count -->
+                        <!-- Enable Speed Limit -->
+                        <CheckBox x:Name="EnableSpeedLimitCheckBox"
+                                  Content="Bật giới hạn tốc độ toàn cục"
+                                  IsChecked="{Binding EnableSpeedLimit, Mode=TwoWay}"
+                                  Foreground="#E2E8F0"
+                                  FontSize="14"
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,0,16"
+                                  Checked="EnableSpeedLimitCheckBox_Changed"
+                                  Unchecked="EnableSpeedLimitCheckBox_Changed"/>
+                        
+                        <!-- Speed Limit Controls -->
+                        <StackPanel x:Name="SpeedLimitControlsPanel" IsEnabled="{Binding EnableSpeedLimit}">
+                            <TextBlock Text="Tốc độ tối đa (KB/s):" 
+                                       FontSize="14" 
+                                       Foreground="#94A3B8"
+                                       Margin="0,0,0,8"/>
+                            
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="80"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <Slider x:Name="SpeedLimitSlider"
+                                        Grid.Column="0"
+                                        Minimum="10"
+                                        Maximum="10240"
+                                        Value="{Binding GlobalSpeedLimitKBps, Mode=TwoWay}"
+                                        TickFrequency="10"
+                                        IsSnapToTickEnabled="False"
+                                        VerticalAlignment="Center"
+                                        ValueChanged="SpeedLimitSlider_ValueChanged"/>
+                                
+                                <TextBox x:Name="SpeedLimitTextBox"
+                                         Grid.Column="1"
+                                         Text="{Binding GlobalSpeedLimitKBps, Mode=TwoWay, StringFormat={}{0:F0}}"
+                                         Background="#334155"
+                                         Foreground="#60A5FA"
+                                         FontSize="15"
+                                         FontWeight="Bold"
+                                         TextAlignment="Center"
+                                         Padding="8,6"
+                                         Margin="12,0,0,0"
+                                         VerticalContentAlignment="Center"
+                                         BorderThickness="0"/>
+                            </Grid>
+                            
+                            <!-- Quick Speed Presets -->
+                            <TextBlock Text="Cài đặt nhanh:" 
+                                       FontSize="13" 
+                                       Foreground="#94A3B8"
+                                       Margin="0,8,0,8"/>
+                            
+                            <WrapPanel>
+                                <Button Content="128 KB/s" 
+                                        Style="{StaticResource ModernButton}"
+                                        Padding="12,6"
+                                        Margin="0,0,8,8"
+                                        Click="SpeedPreset_Click" Tag="128"/>
+                                <Button Content="256 KB/s" 
+                                        Style="{StaticResource ModernButton}"
+                                        Padding="12,6"
+                                        Margin="0,0,8,8"
+                                        Click="SpeedPreset_Click" Tag="256"/>
+                                <Button Content="512 KB/s" 
+                                        Style="{StaticResource ModernButton}"
+                                        Padding="12,6"
+                                        Margin="0,0,8,8"
+                                        Click="SpeedPreset_Click" Tag="512"/>
+                                <Button Content="1 MB/s" 
+                                        Style="{StaticResource ModernButton}"
+                                        Padding="12,6"
+                                        Margin="0,0,8,8"
+                                        Click="SpeedPreset_Click" Tag="1024"/>
+                                <Button Content="5 MB/s" 
+                                        Style="{StaticResource ModernButton}"
+                                        Padding="12,6"
+                                        Margin="0,0,8,8"
+                                        Click="SpeedPreset_Click" Tag="5120"/>
+                                <Button Content="10 MB/s" 
+                                        Style="{StaticResource ModernButton}"
+                                        Padding="12,6"
+                                        Margin="0,0,8,8"
+                                        Click="SpeedPreset_Click" Tag="10240"/>
+                            </WrapPanel>
+                            
+                            <TextBlock Text="💡 Giới hạn tốc độ áp dụng cho tất cả downloads mới. Downloads đang chạy sẽ áp dụng giới hạn sau khi tạm dừng và tiếp tục."
+                                       FontSize="12"
+                                       Foreground="#64748B"
+                                       TextWrapping="Wrap"
+                                       Margin="0,12,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Download Settings Section -->
+                <Border Background="#1E293B" 
+                        CornerRadius="12" 
+                        Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="🔧 Cài đặt tải xuống" 
+                                   FontSize="18" 
+                                   FontWeight="SemiBold" 
+                                   Foreground="#E2E8F0"
+                                   Margin="0,0,0,16"/>
+                        
                         <TextBlock Text="Số kết nối song song:" 
                                    FontSize="14" 
                                    Foreground="#94A3B8"
@@ -171,7 +276,6 @@
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,16"/>
                         
-                        <!-- Max Concurrent Downloads -->
                         <TextBlock Text="Số download đồng thời tối đa:" 
                                    FontSize="14" 
                                    Foreground="#94A3B8"

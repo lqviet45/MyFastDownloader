@@ -3,6 +3,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using MyFastDownloader.App.Models;
 using MyFastDownloader.App.Services;
@@ -27,11 +28,46 @@ public partial class SettingsWindow : Window
     {
         _settings = await _settingsService.LoadSettingsAsync();
         DataContext = _settings;
+        
+        // Update UI based on speed limit state
+        UpdateSpeedLimitUI();
+    }
+
+    private void EnableSpeedLimitCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        UpdateSpeedLimitUI();
+    }
+
+    private void UpdateSpeedLimitUI()
+    {
+        if (SpeedLimitControlsPanel != null)
+        {
+            SpeedLimitControlsPanel.Opacity = _settings.EnableSpeedLimit ? 1.0 : 0.5;
+        }
+    }
+
+    private void SpeedLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (SpeedLimitTextBox != null && _settings != null)
+        {
+            _settings.GlobalSpeedLimitKBps = e.NewValue;
+        }
+    }
+
+    private void SpeedPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is string tag)
+        {
+            if (double.TryParse(tag, out var speedKBps))
+            {
+                _settings.GlobalSpeedLimitKBps = speedKBps;
+                SpeedLimitSlider.Value = speedKBps;
+            }
+        }
     }
 
     private void BrowseFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        // Use Windows Shell to select folder (no WinForms dependency needed)
         var selectedFolder = ShowFolderBrowserDialog(_settings.DefaultDownloadFolder);
         
         if (!string.IsNullOrEmpty(selectedFolder))
@@ -45,15 +81,12 @@ public partial class SettingsWindow : Window
     {
         try
         {
-            // Use Windows Shell COM interface for folder selection
             var dialog = (IFileDialog)new FileOpenDialog();
             
-            // Set options to select folders
             dialog.GetOptions(out var options);
             options |= FOS.FOS_PICKFOLDERS | FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PATHMUSTEXIST;
             dialog.SetOptions(options);
             
-            // Set initial folder
             if (Directory.Exists(initialFolder))
             {
                 IShellItem? initialFolderItem = null;
@@ -65,11 +98,10 @@ public partial class SettingsWindow : Window
                 }
             }
             
-            // Show dialog
             var hwnd = new WindowInteropHelper(this).Handle;
             var result = dialog.Show(hwnd);
             
-            if (result == 0) // S_OK
+            if (result == 0)
             {
                 dialog.GetResult(out var resultItem);
                 resultItem.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var path);
@@ -82,7 +114,6 @@ public partial class SettingsWindow : Window
         }
         catch
         {
-            // Fallback to simple input dialog if COM fails
             return ShowSimpleFolderInput(initialFolder);
         }
         
@@ -91,7 +122,6 @@ public partial class SettingsWindow : Window
     
     private string? ShowSimpleFolderInput(string currentFolder)
     {
-        // Simple fallback: show input dialog for folder path
         var inputWindow = new Window
         {
             Title = "Chọn thư mục",
@@ -102,36 +132,36 @@ public partial class SettingsWindow : Window
             Background = System.Windows.Media.Brushes.White
         };
         
-        var grid = new System.Windows.Controls.Grid
+        var grid = new Grid
         {
             Margin = new Thickness(20)
         };
-        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
-        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
-        grid.RowDefinitions.Add(new System.Windows.Controls.RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
+        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Auto) });
         
-        var label = new System.Windows.Controls.TextBlock 
+        var label = new TextBlock 
         { 
             Text = "Nhập đường dẫn thư mục:",
             Margin = new Thickness(0, 0, 0, 10)
         };
-        System.Windows.Controls.Grid.SetRow(label, 0);
+        Grid.SetRow(label, 0);
         
-        var textBox = new System.Windows.Controls.TextBox
+        var textBox = new TextBox
         {
             Text = currentFolder,
             Padding = new Thickness(5),
             Margin = new Thickness(0, 0, 0, 15)
         };
-        System.Windows.Controls.Grid.SetRow(textBox, 1);
+        Grid.SetRow(textBox, 1);
         
-        var buttonPanel = new System.Windows.Controls.StackPanel
+        var buttonPanel = new StackPanel
         {
-            Orientation = System.Windows.Controls.Orientation.Horizontal,
+            Orientation = Orientation.Horizontal,
             HorizontalAlignment = HorizontalAlignment.Right
         };
         
-        var okButton = new System.Windows.Controls.Button
+        var okButton = new Button
         {
             Content = "OK",
             Width = 80,
@@ -140,7 +170,7 @@ public partial class SettingsWindow : Window
         };
         okButton.Click += (s, e) => { inputWindow.DialogResult = true; inputWindow.Close(); };
         
-        var cancelButton = new System.Windows.Controls.Button
+        var cancelButton = new Button
         {
             Content = "Hủy",
             Width = 80,
@@ -150,7 +180,7 @@ public partial class SettingsWindow : Window
         
         buttonPanel.Children.Add(okButton);
         buttonPanel.Children.Add(cancelButton);
-        System.Windows.Controls.Grid.SetRow(buttonPanel, 2);
+        Grid.SetRow(buttonPanel, 2);
         
         grid.Children.Add(label);
         grid.Children.Add(textBox);
@@ -199,7 +229,32 @@ public partial class SettingsWindow : Window
                 }
             }
 
+            // Validate speed limit value
+            if (_settings.EnableSpeedLimit && _settings.GlobalSpeedLimitKBps < 10)
+            {
+                MessageBox.Show(
+                    "Giới hạn tốc độ phải ít nhất 10 KB/s",
+                    "Giá trị không hợp lệ",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                return;
+            }
+
             await _settingsService.SaveSettingsAsync(_settings);
+            
+            // Update global speed throttler
+            GlobalSpeedThrottler.Instance.Configure(
+                _settings.EnableSpeedLimit,
+                _settings.GlobalSpeedLimitBytesPerSec
+            );
+            
+            // Notify DownloadManager about settings change
+            var downloadManager = App.GetDownloadManager();
+            if (downloadManager != null)
+            {
+                await downloadManager.UpdateGlobalSpeedLimitAsync();
+            }
+            
             DialogResult = true;
             Close();
         }

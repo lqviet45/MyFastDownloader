@@ -53,12 +53,35 @@ public class DownloadTaskItem : INotifyPropertyChanged
     
     public int SegmentsCount { get; set; } = 6;
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.Now;
+    
+    // Speed limiting properties
+    private SpeedLimitMode _speedLimitMode = SpeedLimitMode.Global;
+    public SpeedLimitMode SpeedLimitMode
+    {
+        get => _speedLimitMode;
+        set { _speedLimitMode = value; OnPropertyChanged(); OnPropertyChanged(nameof(SpeedLimitText)); }
+    }
+    
+    private long _customSpeedLimitBytesPerSec = 0;
+    public long CustomSpeedLimitBytesPerSec
+    {
+        get => _customSpeedLimitBytesPerSec;
+        set { _customSpeedLimitBytesPerSec = value; OnPropertyChanged(); OnPropertyChanged(nameof(SpeedLimitText)); }
+    }
 
     // UI Properties
     public string FileName => string.IsNullOrEmpty(FilePath) ? "Unknown" : Path.GetFileName(FilePath);
     public double ProgressPercent => TotalSize > 0 ? Math.Round((double)Downloaded / TotalSize * 100, 1) : 0;
     public string SizeText => TotalSize > 0 ? $"{FormatBytes(Downloaded)} / {FormatBytes(TotalSize)}" : "Unknown size";
     public string SpeedText => SpeedBytesPerSec > 0 ? $"{FormatBytes(SpeedBytesPerSec)}/s" : "";
+    
+    public string SpeedLimitText => SpeedLimitMode switch
+    {
+        SpeedLimitMode.Unlimited => "Không giới hạn",
+        SpeedLimitMode.Global => "Global",
+        SpeedLimitMode.Custom => $"⚡ {FormatBytes(CustomSpeedLimitBytesPerSec)}/s",
+        _ => ""
+    };
     
     public string StatusText => Status switch
     {
@@ -83,6 +106,24 @@ public class DownloadTaskItem : INotifyPropertyChanged
     };
 
     public SolidColorBrush StatusForeground => new SolidColorBrush(Colors.White);
+    
+    /// <summary>
+    /// Helper to get custom speed limit in KB/s
+    /// </summary>
+    public double CustomSpeedLimitKBps
+    {
+        get => CustomSpeedLimitBytesPerSec / 1024.0;
+        set => CustomSpeedLimitBytesPerSec = (long)(value * 1024);
+    }
+    
+    /// <summary>
+    /// Helper to get custom speed limit in MB/s
+    /// </summary>
+    public double CustomSpeedLimitMBps
+    {
+        get => CustomSpeedLimitBytesPerSec / (1024.0 * 1024.0);
+        set => CustomSpeedLimitBytesPerSec = (long)(value * 1024 * 1024);
+    }
 
     private static string FormatBytes(double bytes)
     {
