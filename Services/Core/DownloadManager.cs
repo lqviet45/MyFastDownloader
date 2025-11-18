@@ -18,9 +18,13 @@ public class DownloadManager
     
     public event Action<DownloadTaskItem>? Updated;
 
-    public DownloadManager()
+    public DownloadManager() : this(new SettingsService())
     {
-        _settingsService = App.GetSettingsService() ?? new SettingsService();
+    }
+
+    public DownloadManager(SettingsService settingsService)
+    {
+        _settingsService = settingsService;
         _ = InitializeGlobalSpeedLimitAsync();
     }
     

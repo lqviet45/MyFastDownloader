@@ -1,36 +1,30 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
-using MyFastDownloader.App.Models.Settings;
-using MyFastDownloader.App.Services.Storage;
 using MyFastDownloader.App.Services.Network;
+using MyFastDownloader.App.ViewModels;
 
 namespace MyFastDownloader.App.Views;
 
 public partial class SettingsWindow : Window
 {
-    private readonly SettingsService _settingsService;
-    private AppSettings _settings;
+    private readonly SettingsViewModel _viewModel;
 
     public SettingsWindow()
     {
         InitializeComponent();
-        
-        _settingsService = App.GetSettingsService() ?? new SettingsService();
-        _settings = new AppSettings();
-        _ = LoadSettingsAsync();
+
+        _viewModel = App.GetRequiredService<SettingsViewModel>();
+        DataContext = _viewModel;
+        Loaded += SettingsWindow_Loaded;
     }
 
-    private async Task LoadSettingsAsync()
+    private async void SettingsWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        _settings = await _settingsService.LoadSettingsAsync();
-        DataContext = _settings;
-        
-        // Update UI based on speed limit state
+        await _viewModel.InitializeAsync();
         UpdateSpeedLimitUI();
     }
 
@@ -43,15 +37,7 @@ public partial class SettingsWindow : Window
     {
         if (SpeedLimitControlsPanel != null)
         {
-            SpeedLimitControlsPanel.Opacity = _settings.EnableSpeedLimit ? 1.0 : 0.5;
-        }
-    }
-
-    private void SpeedLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (SpeedLimitTextBox != null && _settings != null)
-        {
-            _settings.GlobalSpeedLimitKBps = e.NewValue;
+            SpeedLimitControlsPanel.Opacity = _viewModel.EnableSpeedLimit ? 1.0 : 0.5;
         }
     }
 
@@ -61,20 +47,18 @@ public partial class SettingsWindow : Window
         {
             if (double.TryParse(tag, out var speedKBps))
             {
-                _settings.GlobalSpeedLimitKBps = speedKBps;
-                SpeedLimitSlider.Value = speedKBps;
+                _viewModel.ApplySpeedPreset(speedKBps);
             }
         }
     }
 
     private void BrowseFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        var selectedFolder = ShowFolderBrowserDialog(_settings.DefaultDownloadFolder);
+        var selectedFolder = ShowFolderBrowserDialog(_viewModel.DefaultDownloadFolder);
         
         if (!string.IsNullOrEmpty(selectedFolder))
         {
-            _settings.DefaultDownloadFolder = selectedFolder;
-            DefaultFolderTextBox.Text = selectedFolder;
+            _viewModel.DefaultDownloadFolder = selectedFolder;
         }
     }
 
@@ -199,62 +183,14 @@ public partial class SettingsWindow : Window
 
     private void ResetFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        var defaultFolder = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "Downloads");
-        
-        _settings.DefaultDownloadFolder = defaultFolder;
-        DefaultFolderTextBox.Text = defaultFolder;
+        _viewModel.ResetToDefaultFolder();
     }
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            // Validate folder exists
-            if (!Directory.Exists(_settings.DefaultDownloadFolder))
-            {
-                var result = MessageBox.Show(
-                    "Thư mục không tồn tại. Bạn có muốn tạo thư mục này?",
-                    "Xác nhận",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    Directory.CreateDirectory(_settings.DefaultDownloadFolder);
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-            // Validate speed limit value
-            if (_settings.EnableSpeedLimit && _settings.GlobalSpeedLimitKBps < 10)
-            {
-                MessageBox.Show(
-                    "Giới hạn tốc độ phải ít nhất 10 KB/s",
-                    "Giá trị không hợp lệ",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            await _settingsService.SaveSettingsAsync(_settings);
-            
-            // Update global speed throttler
-            GlobalSpeedThrottler.Instance.Configure(
-                _settings.EnableSpeedLimit,
-                _settings.GlobalSpeedLimitBytesPerSec
-            );
-            
-            // Notify DownloadManager about settings change
-            var downloadManager = App.GetDownloadManager();
-            if (downloadManager != null)
-            {
-                await downloadManager.UpdateGlobalSpeedLimitAsync();
-            }
+            await _viewModel.SaveAsync();
             
             DialogResult = true;
             Close();

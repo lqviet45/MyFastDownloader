@@ -8,6 +8,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using MyFastDownloader.App.Models.Core;
+using MyFastDownloader.App.Services.Core;
+using MyFastDownloader.App.Services.Storage;
 using MyFastDownloader.App.ViewModels;
 using TaskStatus = MyFastDownloader.App.Models.Enums.TaskStatus;
 
@@ -25,7 +27,9 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        _viewModel = new MainViewModel();
+        var downloadManager = App.GetRequiredService<DownloadManager>();
+        var settingsService = App.GetRequiredService<SettingsService>();
+        _viewModel = new MainViewModel(downloadManager, settingsService);
         DataContext = _viewModel;
         
         // Load window with fade-in animation

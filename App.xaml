@@ -1,6 +1,7 @@
 ﻿<Application x:Class="MyFastDownloader.App.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:MyFastDownloader.App.Converters"
              StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
         <ResourceDictionary>
@@ -12,11 +13,18 @@
             
                 <!-- App Resources -->
                 <ResourceDictionary Source="Resources/Colors/ColorPalette.xaml" />
+                <ResourceDictionary Source="Resources/ModernStyles.xaml" />
                 <!-- <ResourceDictionary Source="Resources/Styles/ButtonStyles.xaml" /> -->
                 <!-- <ResourceDictionary Source="Resources/Styles/TextBoxStyles.xaml" /> -->
                 <!-- <ResourceDictionary Source="Resources/Styles/ProgressBarStyles.xaml" /> -->
                 <!-- <ResourceDictionary Source="Resources/Animations/CommonAnimations.xaml" /> -->
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Global converters -->
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+            <converters:BytesToStringConverter x:Key="BytesToStringConverter" />
+            <converters:SpeedToStringConverter x:Key="SpeedToStringConverter" />
+            <converters:StatusToBrushConverter x:Key="StatusToBrushConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

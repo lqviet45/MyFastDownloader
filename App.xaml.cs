@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using Microsoft.Extensions.DependencyInjection;
 using MyFastDownloader.App.Services.Core;
 using MyFastDownloader.App.Services.Network;
 using MyFastDownloader.App.Services.Storage;
@@ -10,18 +11,19 @@ namespace MyFastDownloader.App;
 public partial class App : Application
 {
     private LocalHttpServer? _httpServer;
-    private static DownloadManager? _downloadManager;
-    private static SettingsService? _settingsService;
+    private IServiceProvider? _serviceProvider;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        
-        // Initialize settings service
-        _settingsService = new SettingsService();
-        
-        // Initialize download manager (singleton for the app)
-        _downloadManager = new DownloadManager();
+
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+        _serviceProvider = services.BuildServiceProvider();
+
+        // Force initialization of critical singletons
+        _ = _serviceProvider.GetRequiredService<SettingsService>();
+        _ = _serviceProvider.GetRequiredService<DownloadManager>();
         
         // START HTTP SERVER FOR BROWSER INTEGRATION
         _httpServer = new LocalHttpServer(4153);
@@ -59,9 +61,22 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _httpServer?.Dispose();
+        if (_serviceProvider is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
         base.OnExit(e);
     }
-    
-    public static DownloadManager? GetDownloadManager() => _downloadManager;
-    public static SettingsService? GetSettingsService() => _settingsService;
+
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        services.AddSingleton<SettingsService>();
+        services.AddSingleton<DownloadManager>();
+
+        services.AddTransient<MainViewModel>();
+        services.AddTransient<SettingsViewModel>();
+    }
+
+    public static T GetRequiredService<T>() where T : notnull =>
+        ((App)Current)._serviceProvider!.GetRequiredService<T>();
 }

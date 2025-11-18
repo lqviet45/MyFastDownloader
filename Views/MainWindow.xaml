@@ -447,22 +447,30 @@
                                                      Foreground="#E2E8F0" 
                                                      TextTrimming="CharacterEllipsis"
                                                      ToolTip="{Binding FileName}"/>
-                                            <TextBlock Text="{Binding SizeText, Mode=OneWay}" 
-                                                     FontSize="13" 
-                                                     Foreground="#94A3B8" 
-                                                     Margin="0,6,0,0"/>
+                                            <TextBlock FontSize="13" 
+                                                       Foreground="#94A3B8" 
+                                                       Margin="0,6,0,0">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0} / {1}">
+                                                        <Binding Path="Downloaded" 
+                                                                 Converter="{StaticResource BytesToStringConverter}" />
+                                                        <Binding Path="TotalSize" 
+                                                                 Converter="{StaticResource BytesToStringConverter}" />
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
                                         </StackPanel>
 
                                         <!-- Status Badge -->
                                         <Border Grid.Column="1" 
                                                 Style="{StaticResource StatusBadge}"
-                                                BorderBrush="{Binding StatusColor, Mode=OneWay}"
+                                                BorderBrush="{Binding Status, Converter={StaticResource StatusToBrushConverter}}"
                                                 VerticalAlignment="Center">
                                             <Border.Background>
                                                 <SolidColorBrush Color="Black" Opacity="0.1"/>
                                             </Border.Background>
                                             <TextBlock Text="{Binding StatusText, Mode=OneWay}" 
-                                                     Foreground="{Binding StatusColor, Mode=OneWay}" 
+                                                     Foreground="{Binding Status, Converter={StaticResource StatusToBrushConverter}}"
                                                      FontSize="12" 
                                                      FontWeight="SemiBold"
                                                      TextAlignment="Center"/>
@@ -490,7 +498,7 @@
                                                      FontSize="16" 
                                                      HorizontalAlignment="Center"
                                                      Margin="0,0,0,4"/>
-                                            <TextBlock Text="{Binding SpeedText, Mode=OneWay}" 
+                                            <TextBlock Text="{Binding SpeedBytesPerSec, Converter={StaticResource SpeedToStringConverter}, Mode=OneWay}" 
                                                      FontSize="14" 
                                                      FontWeight="SemiBold"
                                                      Foreground="#60A5FA"

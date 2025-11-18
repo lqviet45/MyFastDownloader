@@ -164,8 +164,7 @@
                                         Value="{Binding GlobalSpeedLimitKBps, Mode=TwoWay}"
                                         TickFrequency="10"
                                         IsSnapToTickEnabled="False"
-                                        VerticalAlignment="Center"
-                                        ValueChanged="SpeedLimitSlider_ValueChanged"/>
+                                        VerticalAlignment="Center"/>
                                 
                                 <TextBox x:Name="SpeedLimitTextBox"
                                          Grid.Column="1"

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Win32;
+using MyFastDownloader.App.Helpers;
 using MyFastDownloader.App.Models.Core;
 using MyFastDownloader.App.Models.Enums;
 using MyFastDownloader.App.Models.Settings;
@@ -54,7 +55,11 @@ public class MainViewModel : ViewModelBase
     
     public string DefaultDownloadFolder => _settings.DefaultDownloadFolder;
 
-    public MainViewModel()
+    public MainViewModel() : this(new DownloadManager(), new SettingsService())
+    {
+    }
+
+    public MainViewModel(DownloadManager downloadManager, SettingsService settingsService)
     {
         Downloads = new ObservableCollection<DownloadTaskItem>();
         Downloads.CollectionChanged += (s, e) =>
@@ -63,11 +68,11 @@ public class MainViewModel : ViewModelBase
             OnPropertyChanged(nameof(EmptyStateVisibility));
         };
 
-        _downloadManager = App.GetDownloadManager() ?? new DownloadManager();
+        _downloadManager = downloadManager;
         _downloadManager.Updated += OnDownloadUpdated;
         
         // Initialize settings
-        _settingsService = App.GetSettingsService() ?? new SettingsService();
+        _settingsService = settingsService;
         _settings = new AppSettings();
         _ = LoadSettingsAsync();
     }
@@ -94,9 +99,16 @@ public class MainViewModel : ViewModelBase
 
     public async Task AddDownloadAsync()
     {
+        await Task.CompletedTask;
         if (string.IsNullOrWhiteSpace(DownloadUrl))
         {
             MessageBox.Show("Vui lòng nhập URL!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (!ValidationHelper.IsValidUrl(DownloadUrl))
+        {
+            MessageBox.Show("URL không hợp lệ. Vui lòng kiểm tra lại!", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
@@ -125,6 +137,7 @@ public class MainViewModel : ViewModelBase
             else
             {
                 // Use default folder
+                Directory.CreateDirectory(_settings.DefaultDownloadFolder);
                 filePath = Path.Combine(_settings.DefaultDownloadFolder, fileName);
                 
                 // Check if file exists and ask to overwrite
@@ -141,7 +154,7 @@ public class MainViewModel : ViewModelBase
                         // Show save dialog to choose different name
                         var saveDialog = new SaveFileDialog
                         {
-                            FileName = fileName,
+                            FileName = Path.GetFileName(FileHelper.GetUniqueFilePath(filePath)),
                             Filter = "All Files (*.*)|*.*",
                             Title = "Chọn vị trí lưu file",
                             InitialDirectory = _settings.DefaultDownloadFolder
@@ -155,12 +168,17 @@ public class MainViewModel : ViewModelBase
                 }
             }
 
+            FileHelper.EnsureDirectoryExists(filePath);
+
             var item = new DownloadTaskItem
             {
                 Url = DownloadUrl,
                 FilePath = filePath,
                 SegmentsCount = _settings.DefaultSegmentCount,
-                Status = TaskStatus.Queued
+                Status = TaskStatus.Queued,
+                SpeedLimitMode = _settings.EnableSpeedLimit && _settings.GlobalSpeedLimitBytesPerSec > 0 
+                    ? SpeedLimitMode.Global 
+                    : SpeedLimitMode.Unlimited
             };
             
             Downloads.Insert(0, item);
@@ -181,9 +199,14 @@ public class MainViewModel : ViewModelBase
         {
             var uri = new Uri(url);
             var fileName = Path.GetFileName(uri.LocalPath);
-            if (string.IsNullOrEmpty(fileName) || fileName == "/")
-                fileName = $"download_{DateTime.Now:yyyyMMddHHmmss}";
-            return fileName;
+
+            if (string.IsNullOrWhiteSpace(fileName) || fileName == "/")
+            {
+                var extension = UriHelper.GetFileExtension(url);
+                fileName = $"download_{DateTime.Now:yyyyMMddHHmmss}{extension}";
+            }
+
+            return ValidationHelper.SanitizeFileName(fileName);
         }
         catch
         {
