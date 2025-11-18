@@ -5,31 +5,35 @@ using System.Windows.Data;
 namespace MyFastDownloader.App.Converters;
 
 /// <summary>
-/// Converts bytes to human-readable string format (KB, MB, GB, etc.)
+/// Converts bytes to human-readable string (KB, MB, GB)
 /// </summary>
-[ValueConversion(typeof(long), typeof(string))]
 public class BytesToStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is not long bytes && value is not double)
+        if (value is not long bytes)
             return "0 B";
 
-        double size = value is long l ? l : (double)value;
-        string[] suffixes = { "B", "KB", "MB", "GB", "TB", "PB" };
-        int counter = 0;
-
-        while (size >= 1024 && counter < suffixes.Length - 1)
-        {
-            size /= 1024;
-            counter++;
-        }
-
-        return $"{size:F1} {suffixes[counter]}";
+        return FormatBytes(bytes);
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
         throw new NotImplementedException();
+    }
+
+    public static string FormatBytes(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len /= 1024;
+        }
+
+        return $"{len:0.##} {sizes[order]}";
     }
 }

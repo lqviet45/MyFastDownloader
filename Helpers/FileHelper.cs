@@ -9,69 +9,89 @@ namespace MyFastDownloader.App.Helpers;
 public static class FileHelper
 {
     /// <summary>
-    /// Format bytes to human-readable string
+    /// Ensures directory exists, creates if not
     /// </summary>
-    public static string FormatBytes(long bytes)
+    public static void EnsureDirectoryExists(string filePath)
     {
-        string[] suffixes = { "B", "KB", "MB", "GB", "TB", "PB" };
-        int counter = 0;
-        double size = bytes;
-
-        while (size >= 1024 && counter < suffixes.Length - 1)
+        var directory = Path.GetDirectoryName(filePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            size /= 1024;
-            counter++;
+            Directory.CreateDirectory(directory);
         }
-
-        return $"{size:F1} {suffixes[counter]}";
     }
 
     /// <summary>
-    /// Get safe filename from URL
+    /// Gets a unique filename if file already exists by appending (1), (2), etc.
     /// </summary>
-    public static string GetFileNameFromUrl(string url)
+    public static string GetUniqueFilePath(string filePath)
+    {
+        if (!File.Exists(filePath))
+            return filePath;
+
+        var directory = Path.GetDirectoryName(filePath) ?? "";
+        var fileNameWithoutExt = Path.GetFileNameWithoutExtension(filePath);
+        var extension = Path.GetExtension(filePath);
+        var counter = 1;
+
+        string newPath;
+        do
+        {
+            var newFileName = $"{fileNameWithoutExt} ({counter}){extension}";
+            newPath = Path.Combine(directory, newFileName);
+            counter++;
+        } while (File.Exists(newPath));
+
+        return newPath;
+    }
+
+    /// <summary>
+    /// Safely deletes a file if it exists
+    /// </summary>
+    public static bool TryDeleteFile(string filePath)
     {
         try
         {
-            var uri = new Uri(url);
-            var fileName = Path.GetFileName(uri.LocalPath);
-            
-            if (string.IsNullOrWhiteSpace(fileName) || fileName == "/")
+            if (File.Exists(filePath))
             {
-                fileName = $"download_{DateTime.Now:yyyyMMddHHmmss}";
+                File.Delete(filePath);
+                return true;
             }
-            
-            return SanitizeFileName(fileName);
+            return false;
         }
         catch
         {
-            return $"download_{DateTime.Now:yyyyMMddHHmmss}";
+            return false;
         }
     }
 
     /// <summary>
-    /// Remove invalid characters from filename
+    /// Gets file size in bytes, returns 0 if file doesn't exist
     /// </summary>
-    public static string SanitizeFileName(string fileName)
-    {
-        var invalidChars = Path.GetInvalidFileNameChars();
-        foreach (var c in invalidChars)
-        {
-            fileName = fileName.Replace(c, '_');
-        }
-        return fileName;
-    }
-
-    /// <summary>
-    /// Check if path is writable
-    /// </summary>
-    public static bool IsPathWritable(string path)
+    public static long GetFileSize(string filePath)
     {
         try
         {
-            var testFile = Path.Combine(path, $"test_{Guid.NewGuid()}.tmp");
-            File.WriteAllText(testFile, "test");
-            File.Delete(testFile);
+            if (File.Exists(filePath))
+            {
+                var fileInfo = new FileInfo(filePath);
+                return fileInfo.Length;
+            }
+            return 0;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Checks if file path is valid
+    /// </summary>
+    public static bool IsValidFilePath(string path)
+    {
+        try
+        {
+            var fi = new FileInfo(path);
             return true;
         }
         catch
@@ -81,27 +101,20 @@ public static class FileHelper
     }
 
     /// <summary>
-    /// Get unique filename if file exists
+    /// Gets default downloads folder
     /// </summary>
-    public static string GetUniqueFileName(string filePath)
+    public static string GetDefaultDownloadsFolder()
     {
-        if (!File.Exists(filePath))
-            return filePath;
+        var downloadsPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "Downloads"
+        );
 
-        var directory = Path.GetDirectoryName(filePath) ?? "";
-        var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-        var extension = Path.GetExtension(filePath);
-        
-        int counter = 1;
-        string newFilePath;
-        
-        do
+        if (!Directory.Exists(downloadsPath))
         {
-            newFilePath = Path.Combine(directory, $"{fileNameWithoutExtension} ({counter}){extension}");
-            counter++;
+            Directory.CreateDirectory(downloadsPath);
         }
-        while (File.Exists(newFilePath));
 
-        return newFilePath;
+        return downloadsPath;
     }
 }

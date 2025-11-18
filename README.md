@@ -118,22 +118,27 @@ int allowedBytes = await throttler.ThrottleAsync(requestedBytes, token);
 ## 📁 File Structure
 
 ```
-/mnt/user-data/outputs/
+MyFastDownloader.App/
+│
 ├── Models/
-│   ├── SpeedLimitMode.cs           (428 bytes)
-│   ├── AppSettings.cs              (1.9 KB)
-│   └── DownloadTaskItem.cs         (5.1 KB)
+│   ├── Core/          
+│   ├── Enums/         
+│   └── Settings/      
 │
 ├── Services/
-│   ├── SpeedThrottler.cs           (6.7 KB) 
-│   ├── SegmentedDownloader.cs      (22 KB)
-│   └── DownloadManager.cs          (5.5 KB)
+│   ├── Core/          
+│   ├── Network/       
+│   └── Storage/       
 │
-├── Views/
-│   ├── SettingsWindow.xaml         (18 KB)
-│   └── SettingsWindow.xaml.cs      (12 KB)
+├── ViewModels/
+│   ├── Base/          
+│   
 │
-└── SPEED_LIMITING_IMPLEMENTATION.md (17 KB)
+├── Converters/        
+├── Helpers/           
+│
+└── Views/
+    └── MainWindow.xaml
 ```
 
 **Total Code**: ~71 KB  
