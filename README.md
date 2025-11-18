@@ -1,382 +1,285 @@
-# MyFastDownloader - Speed Limiting Feature Implementation ✅
+# MyFastDownloader 🚀
 
-## 🎉 Implementation Complete!
+A modern, high-performance download manager for Windows built with .NET 9.0 and WPF. Download files faster with multi-segment parallel downloads, pause/resume capability, and browser integration.
 
-**Feature**: Download Speed Limiting  
-**Version**: v1.1 Phase 1  
-**Status**: ✅ **COMPLETED**  
-**Date**: November 11, 2025  
+![.NET](https://img.shields.io/badge/.NET-9.0-512BD4)
+![Platform](https://img.shields.io/badge/platform-Windows-0078D4)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Status](https://img.shields.io/badge/status-active-success)
 
----
+## ✨ Features
 
-## 📦 Deliverables
+### 🎯 Core Features
+- **⚡ Multi-Segment Downloads** - Download files up to 7x faster using 6-16 parallel connections
+- **⏯️ Pause & Resume** - Pause downloads anytime and resume them later with metadata persistence
+- **🌐 Browser Integration** - Add downloads directly from your browser via HTTP server (port 4153)
+- **📊 Real-time Progress** - Track download progress with speed monitoring and progress bars
+- **🎨 Modern Dark UI** - Beautiful, intuitive interface with Vietnamese language support
+- **📁 Download Queue** - Automatic queue management with concurrent download control
+- **🔄 Auto-Resume** - Automatic resume for interrupted downloads with HTTP Range support
 
-### New Files Created
+### 🚀 Performance & Optimization
+- **🎛️ Speed Limiting** - Control bandwidth with global speed limits (Token Bucket algorithm)
+  - Global speed limiting with configurable rates (10 KB/s to 10 MB/s)
+  - Per-download speed limit support (infrastructure ready)
+  - Preset buttons for quick configuration (128KB/s, 256KB/s, 512KB/s, 1MB/s, 5MB/s, 10MB/s)
+  - Dynamic updates without restart
+- **⚙️ Settings Management** - Persistent configuration with settings dialog
+  - Default download folder
+  - Segment count configuration (6-16 segments)
+  - Max concurrent downloads
+  - Speed limit preferences
+- **💾 Efficient Memory Usage** - Buffer management using ArrayPool for memory efficiency
+- **🔁 Smart Retry Logic** - Exponential backoff with up to 5 retry attempts
 
-#### **Models/** (3 files)
-1. `SpeedLimitMode.cs` - Enum for speed limiting modes (Unlimited/Global/Custom)
-2. `AppSettings.cs` - Updated with speed limit configuration properties
-3. `DownloadTaskItem.cs` - Updated with per-download speed limit support
+### 🎨 User Experience
+- **🌙 Dark Theme** - Modern, eye-friendly dark interface
+- **🇻🇳 Vietnamese UI** - Full Vietnamese language support
+- **📢 Toast Notifications** - Slide-in animations for status updates
+- **🎭 Smooth Animations** - Polished animations throughout the interface
+- **📊 Status Badges** - Color-coded status indicators for quick identification
+- **🔍 Empty State UI** - Helpful guidance when no downloads are active
 
-#### **Services/** (3 files)
-1. `SpeedThrottler.cs` - Token bucket algorithm implementation for bandwidth limiting
-2. `SegmentedDownloader.cs` - Updated with throttling integration
-3. `DownloadManager.cs` - Updated with speed limit orchestration
+## 📋 Requirements
 
-#### **Views/** (2 files)
-1. `SettingsWindow.xaml` - UI for speed limiting controls
-2. `SettingsWindow.xaml.cs` - Logic for settings management
+- **OS**: Windows 10/11 (64-bit)
+- **Runtime**: .NET 9.0 (included in self-contained build)
+- **RAM**: 100-200 MB typical usage
+- **Disk**: 50 MB for application + space for downloads
+- **Network**: Internet connection required
 
-#### **Documentation/** (1 file)
-1. `SPEED_LIMITING_IMPLEMENTATION.md` - Comprehensive implementation guide
+## 🚀 Installation
 
----
+### Option 1: Download Release (Recommended)
+1. Download the latest release from [Releases](../../releases)
+2. Extract the ZIP file to your desired location
+3. Run `MyFastDownloader.exe`
 
-## 🚀 Features Implemented
-
-### ✅ Core Features
-- [x] **Global Speed Limiting** - Apply bandwidth limit to all downloads
-- [x] **Token Bucket Algorithm** - Smooth, accurate throttling
-- [x] **Settings UI** - User-friendly configuration interface
-- [x] **Speed Presets** - Quick buttons (128KB/s, 256KB/s, 512KB/s, 1MB/s, 5MB/s, 10MB/s)
-- [x] **Persistent Configuration** - Settings saved and loaded automatically
-- [x] **Dynamic Updates** - Change limits without restart
-- [x] **Thread-Safe Operations** - Safe for concurrent downloads
-- [x] **Per-Download Support** - Infrastructure for custom limits (UI in v1.2)
-
-### 🎨 UI Enhancements
-- [x] New "⚡ Giới hạn tốc độ" section in Settings
-- [x] Enable/disable checkbox
-- [x] Slider control (10 KB/s to 10 MB/s range)
-- [x] Numeric input for precise control
-- [x] Visual feedback (opacity when disabled)
-- [x] Helpful tooltips and descriptions
-- [x] Vietnamese language support
-
----
-
-## 📊 Technical Highlights
-
-### Token Bucket Algorithm
-```
-Bucket Capacity: 1 second of bandwidth
-Refill Rate: Configured bytes per second
-Refill Interval: 100ms (smooth operation)
-Accuracy: ±5% of target speed
-```
-
-### Performance
-- **Memory**: < 1 KB overhead per throttler
-- **CPU**: Minimal (refill every 100ms)
-- **Thread Safety**: Full locking for concurrent access
-- **Latency**: < 1ms average throttling delay
-
----
-
-## 🎯 How to Use
-
-### For End Users
-
-1. **Open Settings** (click ⚙ gear icon)
-2. **Enable Speed Limit**:
-   - Check "Bật giới hạn tốc độ toàn cục"
-3. **Set Your Limit**:
-   - Use slider for approximate speed
-   - Type exact value in text box
-   - OR click preset button (e.g., "1 MB/s")
-4. **Save Settings** (click ✓ Lưu)
-5. **Start Downloads** - New downloads will use the limit
-6. **Existing Downloads** - Pause and resume to apply new limit
-
-### For Developers
-
-#### Configure Global Throttler
-```csharp
-GlobalSpeedThrottler.Instance.Configure(
-    enabled: true,
-    maxBytesPerSecond: 1024 * 1024  // 1 MB/s
-);
-```
-
-#### Set Per-Download Limit
-```csharp
-var item = new DownloadTaskItem
-{
-    SpeedLimitMode = SpeedLimitMode.Custom,
-    CustomSpeedLimitKBps = 512  // 512 KB/s
-};
-```
-
-#### Use Throttler Directly
-```csharp
-var throttler = new SpeedThrottler(bytesPerSecond);
-int allowedBytes = await throttler.ThrottleAsync(requestedBytes, token);
-```
-
----
-
-## 📁 File Structure
-
-```
-MyFastDownloader.App/
-│
-├── Models/
-│   ├── Core/          
-│   ├── Enums/         
-│   └── Settings/      
-│
-├── Services/
-│   ├── Core/          
-│   ├── Network/       
-│   └── Storage/       
-│
-├── ViewModels/
-│   ├── Base/          
-│   
-│
-├── Converters/        
-├── Helpers/           
-│
-└── Views/
-    └── MainWindow.xaml
-```
-
-**Total Code**: ~71 KB  
-**Lines of Code**: ~2,500 lines  
-
----
-
-## 🔄 Integration Steps
-
-### Step 1: Copy Files
-Copy all files from their respective folders to your project:
-```
-Models/* → YourProject/Models/
-Services/* → YourProject/Services/  
-Views/* → YourProject/Views/
-```
-
-### Step 2: Update Existing Files
-Your existing files need minor updates:
-
-**App.xaml.cs**:
-- Ensure SettingsService is initialized
-- GlobalSpeedThrottler configured on startup
-
-**MainViewModel.cs**:
-- Settings reload after changes
-- Pass speed limit mode to downloads
-
-### Step 3: Compile & Test
+### Option 2: Build from Source
 ```bash
+# Clone the repository
+git clone https://github.com/lqviet45/MyFastDownloader.git
+cd MyFastDownloader
+
+# Build the project
 dotnet build
+
+# Run the application
 dotnet run
+
+# Or publish as self-contained executable
+dotnet publish -c Release -r win-x64 --self-contained
 ```
 
-### Step 4: Verify Features
-- [ ] Open Settings window
-- [ ] Enable speed limit
-- [ ] Set to 1 MB/s
-- [ ] Start download
-- [ ] Verify speed limited to ~1 MB/s
-- [ ] Change to 512 KB/s
-- [ ] Pause/resume download
-- [ ] Verify new limit applied
+## 📖 Quick Start
 
----
+### Adding Downloads
 
-## 🧪 Testing Checklist
+#### Method 1: Direct URL Entry
+1. Copy a download URL
+2. Paste it into the URL field at the top
+3. Click "**Thêm**" (Add)
+4. Choose save location
+5. Download starts automatically!
 
-### Basic Functionality
-- [ ] Enable/disable speed limiting
-- [ ] Set speed limit via slider
-- [ ] Set speed limit via text input
-- [ ] Use preset buttons
-- [ ] Save and load settings
-- [ ] Settings persist across restarts
+#### Method 2: Browser Integration
+1. Click "**📋 Copy Bookmark**" in the footer
+2. Drag the bookmarklet to your browser's bookmarks bar
+3. On any webpage, click the bookmark to add the URL
+4. Choose save location
+5. Download starts in MyFastDownloader!
 
-### Download Behavior
-- [ ] New downloads respect global limit
-- [ ] Multiple downloads share bandwidth
-- [ ] Paused downloads resume with new limit
-- [ ] Speed display shows throttled speed
-- [ ] Downloads complete successfully
+#### Method 3: Custom Protocol (Windows Registry)
+1. Run `MyFastDownloader.reg` to register custom protocol
+2. Links with `myfastdownloader://` will open in the app
 
-### Edge Cases
-- [ ] Very low speeds (10-50 KB/s)
-- [ ] Very high speeds (>10 MB/s)
-- [ ] Disable during active download
-- [ ] Enable during active download
-- [ ] Multiple concurrent downloads
-- [ ] Network interruptions with throttling
+### Managing Downloads
 
----
+- **⏸️ Pause**: Click the pause button to temporarily stop a download
+- **▶️ Resume**: Click play to resume a paused download
+- **📂 Open Folder**: Click folder icon to open the download location
+- **🗑️ Remove**: Remove completed or failed downloads from the list
 
-## ⚠️ Known Limitations
+### Configuring Speed Limits
 
-1. **Active Downloads**: Must pause/resume to apply new limit
-2. **Minimum Speed**: 10 KB/s (lower may be inaccurate)
-3. **Per-Download UI**: Not yet available (planned v1.2)
-4. **Low Speed Accuracy**: <100 KB/s may have ±10% variance
+1. Click the **⚙️ Settings** button (gear icon)
+2. Enable "**Bật giới hạn tốc độ toàn cục**" (Enable global speed limit)
+3. Set your desired speed limit:
+   - Use the slider for quick adjustment
+   - Type exact value in the text box
+   - Click preset buttons (128KB/s, 256KB/s, etc.)
+4. Click "**✓ Lưu**" (Save)
+5. New downloads will use the configured limit
+6. Pause and resume existing downloads to apply the new limit
 
----
+## 🏗️ Architecture
 
-## 🔮 Future Enhancements (v1.2)
+### Project Structure
+```
+MyFastDownloader/
+├── App.xaml / App.xaml.cs          # Application entry point with DI setup
+├── Models/                          # Data models
+│   ├── Core/                        # Core domain models
+│   │   ├── DownloadTaskItem.cs      # Download task representation
+│   │   ├── DownloadSegment.cs       # Individual download segment
+│   │   └── DownloadMetadata.cs      # Metadata for persistence
+│   ├── Enums/                       # Enumerations
+│   │   ├── TaskStatus.cs            # Download status states
+│   │   └── SpeedLimitMode.cs        # Speed limiting modes
+│   └── Settings/                    # Settings models
+│       └── AppSettings.cs           # Application configuration
+├── Services/                        # Business logic services
+│   ├── Core/                        # Core services
+│   │   ├── DownloadManager.cs       # Download orchestration
+│   │   └── SegmentedDownloader.cs   # Multi-segment download engine
+│   ├── Network/                     # Network services
+│   │   ├── LocalHttpServer.cs       # Browser integration server
+│   │   └── SpeedThrottler.cs        # Bandwidth throttling
+│   └── Storage/                     # Storage services
+│       └── SettingsService.cs       # Settings persistence
+├── ViewModels/                      # MVVM ViewModels
+│   ├── Base/                        # Base classes
+│   │   └── ViewModelBase.cs         # Base ViewModel with INotifyPropertyChanged
+│   ├── MainViewModel.cs             # Main window ViewModel
+│   └── SettingsViewModel.cs         # Settings window ViewModel
+├── Views/                           # UI Views
+│   ├── MainWindow.xaml              # Main application window
+│   └── SettingsWindow.xaml          # Settings dialog
+├── Converters/                      # Value converters for XAML
+├── Helpers/                         # Utility helpers
+└── Resources/                       # XAML resources (styles, colors)
+```
 
-### Planned Features
-- [ ] Per-download context menu for custom limits
-- [ ] Scheduled speed limits (time-based)
-- [ ] Bandwidth usage statistics
-- [ ] Smart throttling (auto-adjust)
-- [ ] Priority-based bandwidth allocation
+### Key Technologies
+- **.NET 9.0** - Modern .NET framework
+- **WPF** - Windows Presentation Foundation for UI
+- **MahApps.Metro** - Modern UI components library
+- **CommunityToolkit.MVVM** - MVVM helpers and commands
+- **Microsoft.Extensions.DependencyInjection** - Dependency injection
+- **Serilog** - Structured logging
 
----
+### Design Patterns
+- **MVVM (Model-View-ViewModel)** - Clean separation of concerns
+- **Dependency Injection** - Loose coupling and testability
+- **Singleton** - Global speed throttler instance
+- **Observer Pattern** - Event-driven download updates
+- **Token Bucket Algorithm** - Smooth bandwidth throttling
+
+## 🔧 Configuration
+
+Settings are stored in: `%LocalAppData%/MyFastDownloader/settings.json`
+
+Example configuration:
+```json
+{
+  "DefaultDownloadFolder": "C:\\Users\\YourName\\Downloads",
+  "AlwaysAskSaveLocation": false,
+  "DefaultSegmentCount": 8,
+  "MaxConcurrentDownloads": 3,
+  "EnableSpeedLimit": true,
+  "GlobalSpeedLimitBytesPerSec": 1048576
+}
+```
 
 ## 📚 Documentation
 
-### Main Documents
-- `SPEED_LIMITING_IMPLEMENTATION.md` - Complete technical documentation
-- `README.md` (this file) - Quick start guide
+- [**User Guide**](docs/USER_GUIDE.md) - Comprehensive usage instructions
+- [**Feature Roadmap**](docs/FEATURE_ROADMAP.md) - Planned features and timeline
+- [**API Documentation**](docs/API.md) - Developer API reference
+- [**IDM Feature Analysis**](docs/IDM_FEATURE_ANALYSIS.md) - Comparison with IDM
+- [**Progress Tracker**](docs/PROGRESS_TRACKER.md) - Development progress
+- [**Changelog**](Changelog.md) - Version history and changes
 
-### Code Documentation
-All classes have XML documentation comments:
-- `SpeedThrottler` - Token bucket algorithm
-- `GlobalSpeedThrottler` - Singleton coordinator
-- `DownloadManager` - Orchestration logic
-- `SegmentedDownloader` - Download engine integration
+## 🛣️ Roadmap
 
----
+### ✅ Version 1.0 (Released)
+- Multi-segment download engine
+- Pause/Resume functionality
+- Browser integration
+- Modern dark UI
+- Speed limiting (global)
 
-## 🐛 Troubleshooting
+### 🚧 Version 1.1 (In Progress)
+- [ ] HTTP Authentication (Basic, Digest, NTLM)
+- [ ] Proxy support (HTTP/HTTPS/SOCKS)
+- [ ] Enhanced error handling
+- [ ] Per-download speed limits UI
 
-### Speed Limit Not Applied
-**Problem**: Downloads not respecting speed limit  
-**Solution**: 
-1. Check Settings → "Bật giới hạn tốc độ toàn cục" is checked
-2. Verify speed limit value is > 0
-3. Pause and resume active downloads
+### 📅 Version 1.2 (Planned)
+- [ ] Download categories
+- [ ] Scheduled downloads
+- [ ] Batch downloads from files
+- [ ] Download history tracking
+- [ ] Enhanced browser integration
 
-### Inaccurate Speed
-**Problem**: Actual speed differs from setting  
-**Solution**:
-1. Set speed limit ≥ 100 KB/s for better accuracy
-2. Check network stability
-3. Verify no other apps consuming bandwidth
-4. For very large files, wait 10-15 seconds for stabilization
-
-### Settings Not Saved
-**Problem**: Speed limit resets after restart  
-**Solution**:
-1. Verify settings file permissions
-2. Check `%LocalAppData%/MyFastDownloader/settings.json`
-3. Manually delete settings.json and reconfigure
-
----
-
-## 💡 Tips & Best Practices
-
-### For Best Results
-1. **Use reasonable limits**: 100 KB/s - 10 MB/s range
-2. **Allow stabilization time**: Wait 10-15 seconds after start
-3. **Monitor system resources**: Ensure CPU/RAM available
-4. **Use SSD storage**: Faster writes = more accurate limiting
-5. **Wired connection**: More stable than WiFi
-
-### Performance Optimization
-- Set segment count based on file size
-- Limit concurrent downloads to 3-5
-- Use speed presets for common scenarios
-- Monitor bandwidth with Task Manager
-
----
+See [FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md) for detailed plans.
 
 ## 🤝 Contributing
 
-### Reporting Issues
-When reporting speed limiting issues:
-1. Speed limit setting (KB/s)
-2. Number of concurrent downloads
-3. File size being downloaded
-4. Actual observed speed
-5. Network type
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
-### Feature Requests
-Have ideas for speed limiting enhancements?
-- Open GitHub issue
-- Tag with "enhancement" and "speed-limiting"
-- Describe use case and expected behavior
+### Development Setup
+1. Fork the repository
+2. Clone your fork
+3. Create a feature branch: `git checkout -b feature/amazing-feature`
+4. Make your changes
+5. Commit: `git commit -m 'Add amazing feature'`
+6. Push: `git push origin feature/amazing-feature`
+7. Open a Pull Request
 
----
+### Coding Standards
+- Follow C# coding conventions
+- Use meaningful variable and method names
+- Add XML documentation comments for public APIs
+- Write clean, maintainable code
+- Test your changes thoroughly
 
-## 📞 Support
+## 🐛 Troubleshooting
 
-### Getting Help
-- 📖 Read `SPEED_LIMITING_IMPLEMENTATION.md` for details
-- 💬 GitHub Discussions for questions
-- 🐛 GitHub Issues for bugs
-- 📧 Email: support@myfastdownloader.com
+### Application won't start
+- Ensure .NET 9.0 runtime is installed (or use self-contained build)
+- Check Windows Event Viewer for error details
+- Try running as administrator
 
----
+### Downloads fail or are slow
+- Check your internet connection
+- Disable VPN/proxy temporarily
+- Try reducing segment count in settings
+- Check firewall settings
 
-## ✅ Success Criteria Met
+### Speed limiting not working
+- Ensure speed limit is enabled in settings
+- Verify speed limit value is > 0
+- Pause and resume existing downloads to apply changes
+- For accurate limiting, use speeds ≥ 100 KB/s
 
-- [x] Global speed limiting implemented
-- [x] Token bucket algorithm working correctly
-- [x] Settings UI intuitive and functional
-- [x] Settings persistence working
-- [x] Thread-safe implementation
-- [x] Minimal performance overhead
-- [x] Comprehensive documentation
-- [x] Code well-structured and maintainable
+### Browser integration not working
+- Check if port 4153 is available
+- Allow MyFastDownloader through Windows Firewall
+- Verify the bookmarklet was copied correctly
+- Try using direct URL entry method instead
 
----
+For more help, see the [User Guide](docs/USER_GUIDE.md) or open an [issue](../../issues).
 
-## 🎊 Next Steps
+## 📝 License
 
-### Immediate (v1.1 Phase 2)
-1. **HTTP Authentication** - Support for password-protected downloads
-2. **Enhanced Error Handling** - Better error messages and recovery
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### Medium-term (v1.1 Phase 3)
-3. **Proxy Support** - HTTP/HTTPS/SOCKS proxy configuration
+## 🙏 Acknowledgments
 
-### Long-term (v1.2)
-4. **Download Categories** - Organize downloads by type
-5. **Download History** - Track completed downloads
-6. **Batch Downloads** - Multiple URLs at once
+- **MahApps.Metro** - For the beautiful modern UI components
+- **CommunityToolkit.MVVM** - For MVVM helpers
+- **Serilog** - For structured logging capabilities
+- All contributors and users of MyFastDownloader
 
----
+## 📞 Contact & Support
 
-## 📊 Statistics
-
-| Metric | Value |
-|--------|-------|
-| **Files Created** | 8 files |
-| **Lines of Code** | ~2,500 lines |
-| **Documentation** | 17 KB (comprehensive) |
-| **Implementation Time** | 1 day |
-| **Features Added** | 8 major features |
-| **UI Components** | 7 new controls |
+- **GitHub Issues**: [Report bugs or request features](../../issues)
+- **Email**: lqviet455@gmail.com
+- **Repository**: [github.com/lqviet45/MyFastDownloader](https://github.com/lqviet45/MyFastDownloader)
 
 ---
 
-## 🏆 Conclusion
+**Made with ❤️ by lqviet45**
 
-Speed Limiting feature is **COMPLETE** and **PRODUCTION READY**!
-
-The implementation includes:
-- ✅ Robust token bucket algorithm
-- ✅ User-friendly Settings UI  
-- ✅ Persistent configuration
-- ✅ Thread-safe operations
-- ✅ Comprehensive documentation
-- ✅ Ready for v1.1 release
-
-**Next**: Move to HTTP Authentication implementation
-
----
-
-**Thank you for using MyFastDownloader!** 🚀
-
-*Document Version: 1.0*  
-*Last Updated: November 11, 2025*
+*Download faster, work smarter!* 🚀
