@@ -5,8 +5,12 @@ using System.Windows.Data;
 namespace MyFastDownloader.App.Converters;
 
 /// <summary>
-/// Converts bytes to human-readable string (KB, MB, GB)
+/// Converts bytes to human-readable format (KB, MB, GB, TB)
 /// </summary>
+/// <example>
+/// 1024 bytes → "1 KB"
+/// 1048576 bytes → "1 MB"
+/// </example>
 public class BytesToStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
