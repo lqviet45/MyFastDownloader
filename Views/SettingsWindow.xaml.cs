@@ -207,6 +207,15 @@ public partial class SettingsWindow : Window
         DialogResult = false;
         Close();
     }
+    
+    private void CredentialsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var credentialWindow = new CredentialManagerWindow
+        {
+            Owner = this
+        };
+        credentialWindow.ShowDialog();
+    }
 
     #region Windows Shell COM Interfaces for Folder Browser
     

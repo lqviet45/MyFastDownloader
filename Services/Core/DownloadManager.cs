@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MyFastDownloader.App.Models.Enums;
 using MyFastDownloader.App.Models.Core;
+using MyFastDownloader.App.Services.Auth;
 using TaskStatus = MyFastDownloader.App.Models.Enums.TaskStatus;
 using MyFastDownloader.App.Services.Storage;
 using MyFastDownloader.App.Services.Network;
@@ -93,8 +94,9 @@ public class DownloadManager
         LogDebug($"Speed limit mode: {item.SpeedLimitMode}");
 
         var maxParallel = Math.Min(item.SegmentsCount, 8);
-        var engine = new SegmentedDownloader(maxParallel: maxParallel);
-        
+        var credentialManager = App.GetRequiredService<CredentialManager>();
+        var engine = new SegmentedDownloader(maxParallel: maxParallel, credentialManager: credentialManager);
+        engine.SetCredentialForUrl(item.Url);
         // Configure speed limiting based on item's SpeedLimitMode
         switch (item.SpeedLimitMode)
         {

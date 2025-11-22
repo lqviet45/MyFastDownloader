@@ -10,6 +10,10 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using MyFastDownloader.App.Models.Auth;
+using MyFastDownloader.App.Models.Enums;
+using MyFastDownloader.App.Services.Auth;
+using System.Net.Http.Headers;
 using MyFastDownloader.App.Models.Core;
 using MyFastDownloader.App.Services.Network;
 
@@ -37,6 +41,9 @@ public class SegmentedDownloader : IDisposable
     private SpeedThrottler? _customThrottler = null;
     private bool _useGlobalThrottler = true;
 
+    private readonly CredentialManager _credentialManager;
+    private Credential? _credential;
+    
     public event Action<long, long>? Progress;
     public event Action<double>? Speed;
 
@@ -46,10 +53,10 @@ public class SegmentedDownloader : IDisposable
         public double BytesPerSecond { get; set; }
     }
 
-    public SegmentedDownloader(int maxParallel = 8, HttpMessageHandler? handler = null)
+    public SegmentedDownloader(int maxParallel = 8, HttpMessageHandler? handler = null, CredentialManager? credentialManager = null)
     {
         _maxParallel = Math.Max(1, Math.Min(maxParallel, 16));
-        
+        _credentialManager = credentialManager ?? App.GetRequiredService<CredentialManager>();
         if (handler != null)
         {
             _http = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(30) };
@@ -85,6 +92,27 @@ public class SegmentedDownloader : IDisposable
             _customThrottler.UpdateSpeedLimit(bytesPerSecond);
         }
         _useGlobalThrottler = false;
+    }
+    
+    /// <summary>
+    /// Sets the credential to use for this download
+    /// </summary>
+    public void SetCredential(Credential? credential)
+    {
+        _credential = credential;
+    }
+    
+    /// <summary>
+    /// Automatically finds and sets credential based on URL
+    /// </summary>
+    public void SetCredentialForUrl(string url)
+    {
+        _credential = _credentialManager.GetCredentialForUrl(url);
+        
+        if (_credential != null)
+        {
+            LogDebug($"Found credential for URL: {_credential.DisplayText}");
+        }
     }
     
     /// <summary>
@@ -134,12 +162,43 @@ public class SegmentedDownloader : IDisposable
     {
         LogDebug($"Getting content length for: {url}");
         
+        if (_credential == null)
+        {
+            SetCredentialForUrl(url);
+        }
+        
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Head, url);
             request.Headers.ConnectionClose = false;
             
+            // APPLY AUTHENTICATION
+            if (_credential != null && _credential.IsActive)
+            {
+                if (_credential.Mode == AuthenticationMode.Basic)
+                {
+                    var password = _credentialManager.DecryptPassword(_credential.EncryptedPassword);
+                    var authValue = Convert.ToBase64String(
+                        System.Text.Encoding.UTF8.GetBytes($"{_credential.Username}:{password}"));
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authValue);
+                }
+                else if (_credential.Mode == AuthenticationMode.Bearer)
+                {
+                    var bearerToken = _credential.EncryptedToken != null 
+                        ? _credentialManager.DecryptPassword(_credential.EncryptedToken) 
+                        : string.Empty;
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+                }
+            }
+            
             using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+            
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                LogError("Authentication required (401 Unauthorized)");
+                throw new UnauthorizedAccessException(
+                    "Server requires authentication. Please add credentials in Settings > Authentication.");
+            }
             
             if (response.IsSuccessStatusCode && response.Content.Headers.ContentLength.HasValue)
             {
@@ -161,6 +220,10 @@ public class SegmentedDownloader : IDisposable
         catch (TaskCanceledException ex)
         {
             LogError($"HEAD request timed out: {ex.Message}");
+            throw;
+        }
+        catch (UnauthorizedAccessException)
+        {
             throw;
         }
         catch (Exception ex)
@@ -208,10 +271,95 @@ public class SegmentedDownloader : IDisposable
         return -1;
     }
     
+    /// <summary>
+    /// Configures HttpClient with authentication headers
+    /// </summary>
+    private void ConfigureAuthentication(HttpClient client)
+    {
+        if (_credential == null || !_credential.IsActive)
+            return;
+        
+        try
+        {
+            switch (_credential.Mode)
+            {
+                case AuthenticationMode.Basic:
+                    {
+                        var password = _credentialManager.DecryptPassword(_credential.EncryptedPassword);
+                        var authValue = Convert.ToBase64String(
+                            System.Text.Encoding.UTF8.GetBytes($"{_credential.Username}:{password}"));
+                        client.DefaultRequestHeaders.Authorization = 
+                            new AuthenticationHeaderValue("Basic", authValue);
+                        
+                        LogDebug($"Applied Basic authentication for user: {_credential.Username}");
+                        break;
+                    }
+                    
+                case AuthenticationMode.Digest:
+                    {
+                        // Digest authentication requires challenge-response
+                        // The HttpClientHandler will handle this automatically with credentials
+                        var handler = new HttpClientHandler
+                        {
+                            Credentials = new System.Net.NetworkCredential(
+                                _credential.Username,
+                                _credentialManager.DecryptPassword(_credential.EncryptedPassword)
+                            ),
+                            PreAuthenticate = true
+                        };
+                        
+                        LogDebug($"Applied Digest authentication for user: {_credential.Username}");
+                        break;
+                    }
+                    
+                case AuthenticationMode.NTLM:
+                    {
+                        // NTLM authentication
+                        var handler = new HttpClientHandler
+                        {
+                            Credentials = new System.Net.NetworkCredential(
+                                _credential.Username,
+                                _credentialManager.DecryptPassword(_credential.EncryptedPassword)
+                            ),
+                            PreAuthenticate = true
+                        };
+                        
+                        LogDebug($"Applied NTLM authentication for user: {_credential.Username}");
+                        break;
+                    }
+                    
+                case AuthenticationMode.Bearer:
+                    {
+                        var token = _credential.EncryptedToken != null 
+                            ? _credentialManager.DecryptPassword(_credential.EncryptedToken) 
+                            : string.Empty;
+                        client.DefaultRequestHeaders.Authorization = 
+                            new AuthenticationHeaderValue("Bearer", token);
+                        
+                        LogDebug("Applied Bearer token authentication");
+                        break;
+                    }
+            }
+            
+            // Update credential usage statistics
+            _ = _credentialManager.UpdateCredentialUsageAsync(_credential.Id);
+        }
+        catch (Exception ex)
+        {
+            LogError($"Failed to configure authentication: {ex.Message}", ex);
+        }
+    }
+    
     public async Task StartAsync(string url, string filePath, int segmentsCount, CancellationToken token)
     {
         LogDebug($"Starting download from: {url}");
         LogDebug($"Saving to: {filePath}");
+        
+        // AUTO-DETECT CREDENTIAL IF NOT SET
+        if (_credential == null)
+        {
+            SetCredentialForUrl(url);
+        }
         
         var metaPath = filePath + ".meta.json";
         DownloadMetadata meta;
@@ -455,7 +603,32 @@ public class SegmentedDownloader : IDisposable
                     request.Headers.Range = new RangeHeaderValue(start, end);
                     request.Headers.ConnectionClose = false;
                     
+                    // APPLY AUTHENTICATION TO SEGMENT REQUEST
+                    if (_credential != null && _credential.IsActive)
+                    {
+                        if (_credential.Mode == AuthenticationMode.Basic)
+                        {
+                            var password = _credentialManager.DecryptPassword(_credential.EncryptedPassword);
+                            var authValue = Convert.ToBase64String(
+                                System.Text.Encoding.UTF8.GetBytes($"{_credential.Username}:{password}"));
+                            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", authValue);
+                        }
+                        else if (_credential.Mode == AuthenticationMode.Bearer)
+                        {
+                            var authToken = _credential.EncryptedToken != null 
+                                ? _credentialManager.DecryptPassword(_credential.EncryptedToken) 
+                                : string.Empty;
+                            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authToken);
+                        }
+                    }
+                    
                     using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+                    
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    {
+                        LogError($"Segment {segmentIndex} authentication failed (401)");
+                        throw new UnauthorizedAccessException("Authentication failed");
+                    }
                     
                     if (!response.IsSuccessStatusCode)
                     {
@@ -536,6 +709,11 @@ public class SegmentedDownloader : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
+                    throw;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    LogError($"Segment {segmentIndex} requires valid authentication");
                     throw;
                 }
                 catch (Exception ex)
