@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 
-namespace MyFastDownloader.App.Helpers;
+namespace MyFastDownloader.App.Helpers.Validation;
 
 /// <summary>
 /// Helper class for validating user inputs

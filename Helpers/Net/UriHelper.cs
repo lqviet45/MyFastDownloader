@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Web;
 
-namespace MyFastDownloader.App.Helpers;
+namespace MyFastDownloader.App.Helpers.Net;
 
 /// <summary>
 /// Helper class for URI operations

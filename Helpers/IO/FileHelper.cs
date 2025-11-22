@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace MyFastDownloader.App.Helpers;
+namespace MyFastDownloader.App.Helpers.IO;
 
 /// <summary>
 /// Helper class for file operations

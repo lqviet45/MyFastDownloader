@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using MyFastDownloader.App.Helpers;
+using MyFastDownloader.App.Helpers.IO;
 using MyFastDownloader.App.Models.Settings;
 using MyFastDownloader.App.Services.Core;
 using MyFastDownloader.App.Services.Network;
