@@ -552,6 +552,25 @@
                                                 </Button.Style>
                                             </Button>
                                             
+                                            <!-- DELETE BUTTON -->
+                                            <Button Padding="10" Width="40" Height="40"
+                                                    Click="DeleteButton_Click" Tag="{Binding}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                                        <Setter Property="Content" Value="🗑"/>
+                                                        <Setter Property="Background" Value="#64748B"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Error">
+                                                                <Setter Property="Background" Value="#EF4444"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                                                <Setter Property="Background" Value="#F59E0B"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                            
                                             <!-- Open Folder Button -->
                                             <Button Padding="8"
                                                     Width="34"

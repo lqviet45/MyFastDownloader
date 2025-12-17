@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyFastDownloader.App.Services.Auth;
 using MyFastDownloader.App.Services.Core;
 using MyFastDownloader.App.Services.Network;
+using MyFastDownloader.App.Services.Proxy;
 using MyFastDownloader.App.Services.Storage;
 using MyFastDownloader.App.ViewModels;
 using MyFastDownloader.App.Views;
@@ -74,6 +75,7 @@ public partial class App : Application
         services.AddSingleton<SettingsService>();
         services.AddSingleton<DownloadManager>();
         services.AddSingleton<CredentialManager>();
+        services.AddSingleton<ProxyManager>();
         
         services.AddTransient<MainViewModel>();
         services.AddTransient<SettingsViewModel>();

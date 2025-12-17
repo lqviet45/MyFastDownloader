@@ -659,6 +659,46 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Proxy Settings Section -->
+                    <Border Background="#1E293B" 
+                            CornerRadius="12" 
+                            Padding="20"
+                            Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+        
+                            <!-- Left: Description -->
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="🌐 Proxy Settings"
+                                           FontSize="16"
+                                           FontWeight="SemiBold"
+                                           Foreground="White"
+                                           Margin="0,0,0,8"/>
+                                <TextBlock Text="Configure HTTP, HTTPS, or SOCKS proxies"
+                                           FontSize="12"
+                                           Foreground="#94A3B8"/>
+                                <TextBlock Text="• Corporate firewall support"
+                                           FontSize="11"
+                                           Foreground="#64748B"
+                                           Margin="0,4,0,0"/>
+                                <TextBlock Text="• Authentication with credentials"
+                                           FontSize="11"
+                                           Foreground="#64748B"/>
+                            </StackPanel>
+        
+                            <!-- Right: Button -->
+                            <Button Grid.Column="1"
+                                    Content="🌐 Manage"
+                                    Style="{StaticResource ModernButton}"
+                                    Click="ProxyButton_Click"
+                                    VerticalAlignment="Center"
+                                    Padding="18,10"/>
+                        </Grid>
+                    </Border>
+                    
                     <!-- Download Settings Section -->
                     <Border Style="{StaticResource SectionCard}">
                         <StackPanel>

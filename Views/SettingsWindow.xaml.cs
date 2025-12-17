@@ -216,6 +216,15 @@ public partial class SettingsWindow : Window
         };
         credentialWindow.ShowDialog();
     }
+    
+    private void ProxyButton_Click(object sender, RoutedEventArgs e)
+    {
+        var proxyWindow = new ProxyManagerWindow
+        {
+            Owner = this
+        };
+        proxyWindow.ShowDialog();
+    }
 
     #region Windows Shell COM Interfaces for Folder Browser
     

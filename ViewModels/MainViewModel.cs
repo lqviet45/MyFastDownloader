@@ -228,4 +228,27 @@ public class MainViewModel : ViewModelBase
     {
         _downloadManager.Pause(item);
     }
+    
+    public void RemoveDownload(DownloadTaskItem item)
+    {
+        // Stop if downloading
+        if (item.Status == TaskStatus.Downloading)
+            _downloadManager.Pause(item);
+    
+        // Remove from list
+        Downloads.Remove(item);
+    
+        // Delete .meta.json
+        try {
+            var metaPath = item.FilePath + ".meta.json";
+            if (File.Exists(metaPath))
+                File.Delete(metaPath);
+        
+            // Delete incomplete file
+            if (item.Status != TaskStatus.Completed && File.Exists(item.FilePath))
+                File.Delete(item.FilePath);
+        } catch { }
+    
+        StatusMessage = $"Đã xóa: {item.FileName}";
+    }
 }
